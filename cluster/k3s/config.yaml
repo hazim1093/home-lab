@@ -1,0 +1,36 @@
+# K3s Server Configuration
+# Documentation: https://docs.k3s.io/installation/configuration
+
+# Write kubeconfig with proper permissions (readable by non-root users)
+write-kubeconfig-mode: "0644"
+
+# Disable Traefik (we'll use NGINX Ingress instead)
+disable:
+  - traefik
+  - servicelb
+
+# Cluster networking
+# Default pod CIDR
+cluster-cidr: "10.42.0.0/16"
+
+# Default service CIDR
+service-cidr: "10.43.0.0/16"
+
+# Kubelet configuration
+# Enable metrics for kubectl top
+kubelet-arg:
+  - "resolv-conf=/etc/resolv.conf"
+
+# TLS settings
+# Use system certificates
+# tls-san:
+#   - "your-domain.com"
+#   - "192.168.1.100"
+
+# Node labels (optional)
+# node-label:
+#   - "node.kubernetes.io/type=worker"
+
+# Node taints (optional - uncomment if needed)
+# node-taint:
+#   - "key=value:NoSchedule"
