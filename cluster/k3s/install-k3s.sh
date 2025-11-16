@@ -88,11 +88,34 @@ install_prerequisites() {
 configure_firewall() {
     log_info "Configuring firewall for K3s..."
 
+    # Check if firewalld is available and not masked
+    if systemctl list-unit-files | grep -q "^firewalld.service.*masked"; then
+        log_warning "firewalld is masked. Skipping firewall configuration."
+        log_warning "Ensure your network/router provides adequate protection."
+        return 0
+    fi
+
+    # Check if firewalld is installed
+    if ! command -v firewall-cmd &> /dev/null; then
+        log_warning "firewalld is not installed. Skipping firewall configuration."
+        log_warning "Ensure your network/router provides adequate protection."
+        return 0
+    fi
+
     # Check if firewalld is running
     if ! systemctl is-active --quiet firewalld; then
-        log_warning "firewalld is not running. Starting it..."
-        systemctl start firewalld
-        systemctl enable firewalld
+        log_warning "firewalld is not running."
+        read -p "Do you want to start firewalld? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            systemctl start firewalld
+            systemctl enable firewalld
+            log_success "firewalld started and enabled"
+        else
+            log_warning "Skipping firewall configuration."
+            log_warning "Ensure your network/router provides adequate protection."
+            return 0
+        fi
     fi
 
     # K3s server ports
