@@ -1,23 +1,25 @@
 # K3s Cluster Setup
 
-Minimal K3s installation for Rocky Linux with auto-start on boot.
+Minimal K3s installation for Ubuntu/Debian with auto-start on boot.
 
 ## What You Get
 
 - Single-node K3s cluster
 - Auto-starts on boot (systemd enabled)
-- Firewall configured automatically
+- Automatic OS detection (Ubuntu/Debian)
+- Firewall configured automatically (if UFW is enabled)
 - Traefik and ServiceLB disabled (minimal install)
 
 ## Prerequisites
 
-- Rocky Linux 8 or 9
+- **Ubuntu Server 24.04 LTS** (recommended)
+- Or Debian 12
 - Root/sudo access
 - Internet connectivity
 
 ## Installation
 
-### 1. Get the scripts on your Rocky Linux machine
+### 1. Get the scripts on your server
 
 **Option A: Git clone (recommended)**
 ```bash
@@ -27,8 +29,8 @@ cd home-lab/cluster/k3s
 
 **Option B: SCP from local machine**
 ```bash
-scp -r cluster/k3s user@rocky-machine:~/
-ssh user@rocky-machine
+scp -r cluster/k3s user@server:~/
+ssh user@server
 cd k3s
 ```
 
@@ -37,6 +39,14 @@ cd k3s
 ```bash
 sudo ./install-k3s.sh
 ```
+
+The script will:
+- Auto-detect your OS (Ubuntu or Debian)
+- Install prerequisites (curl, wget, git, vim, tar)
+- Configure UFW firewall (if active)
+- Disable swap
+- Install K3s
+- Enable auto-start on boot
 
 Done! K3s is now installed and will start automatically on boot.
 

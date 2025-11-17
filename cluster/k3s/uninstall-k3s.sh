@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ################################################################################
-# K3s Uninstall Script for Rocky Linux
+# K3s Uninstall Script for Ubuntu/Debian
 #
 # This script completely removes K3s and cleans up all related configurations.
 ################################################################################
@@ -14,6 +14,25 @@ readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
 readonly NC='\033[0m' # No Color
+
+# Detect OS
+detect_os() {
+    if [[ -f /etc/os-release ]]; then
+        . /etc/os-release
+        OS=$ID
+        OS_VERSION=$VERSION_ID
+
+        # Only support Ubuntu/Debian
+        if [[ ! "$OS" =~ ^(ubuntu|debian)$ ]]; then
+            log_error "Unsupported OS: $OS"
+            log_error "This script only supports Ubuntu and Debian"
+            exit 1
+        fi
+    else
+        log_error "Cannot detect OS. /etc/os-release not found."
+        exit 1
+    fi
+}
 
 # Logging functions
 log_info() {
@@ -94,34 +113,18 @@ run_k3s_uninstall() {
 cleanup_firewall() {
     log_info "Cleaning up firewall rules..."
 
-    if ! systemctl is-active --quiet firewalld; then
-        log_info "firewalld is not running, skipping firewall cleanup"
-        return 0
-    fi
+    if command -v ufw &> /dev/null && ufw status | grep -q "Status: active"; then
+        log_info "Removing UFW rules for K3s..."
 
-    # K3s ports to remove
-    local ports=(
-        "6443/tcp"   # Kubernetes API
-        "10250/tcp"  # Kubelet metrics
-        "8472/udp"   # Flannel VXLAN
-        "51820/udp"  # Flannel Wireguard
-        "51821/udp"  # Flannel Wireguard
-    )
+        ufw delete allow 6443/tcp > /dev/null 2>&1 || true
+        ufw delete allow 10250/tcp > /dev/null 2>&1 || true
+        ufw delete allow 8472/udp > /dev/null 2>&1 || true
+        ufw delete allow 51820/udp > /dev/null 2>&1 || true
+        ufw delete allow 51821/udp > /dev/null 2>&1 || true
 
-    local cleaned=0
-    for port in "${ports[@]}"; do
-        if firewall-cmd --list-ports | grep -q "$port"; then
-            log_info "Removing firewall rule for port $port..."
-            firewall-cmd --permanent --remove-port="$port" > /dev/null 2>&1
-            cleaned=1
-        fi
-    done
-
-    if [[ $cleaned -eq 1 ]]; then
-        firewall-cmd --reload > /dev/null 2>&1
-        log_success "Firewall rules cleaned up"
+        log_success "UFW rules cleaned up"
     else
-        log_info "No K3s firewall rules to remove"
+        log_info "UFW not active, skipping firewall cleanup"
     fi
 }
 
@@ -268,7 +271,11 @@ display_final_status() {
 
 # Main uninstall flow
 main() {
+    # Detect OS first
+    detect_os
+
     log_info "Starting K3s uninstallation..."
+    log_info "Detected OS: $OS $OS_VERSION"
     echo
 
     check_root

@@ -1,10 +1,10 @@
 #!/bin/bash
 
 ################################################################################
-# K3s Installation Script for Rocky Linux
+# K3s Installation Script for Ubuntu/Debian
 #
-# This script installs K3s on a single Rocky Linux node with proper
-# prerequisites and configuration.
+# This script installs K3s on Ubuntu Server or Debian with automatic
+# configuration and auto-start on boot.
 ################################################################################
 
 set -euo pipefail
@@ -15,6 +15,25 @@ readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
 readonly NC='\033[0m' # No Color
+
+# Detect OS
+detect_os() {
+    if [[ -f /etc/os-release ]]; then
+        . /etc/os-release
+        OS=$ID
+        OS_VERSION=$VERSION_ID
+
+        # Only support Ubuntu/Debian
+        if [[ ! "$OS" =~ ^(ubuntu|debian)$ ]]; then
+            log_error "Unsupported OS: $OS"
+            log_error "This script only supports Ubuntu and Debian"
+            exit 1
+        fi
+    else
+        log_error "Cannot detect OS. /etc/os-release not found."
+        exit 1
+    fi
+}
 
 # Logging functions
 log_info() {
@@ -60,10 +79,6 @@ check_existing_installation() {
 install_prerequisites() {
     log_info "Installing prerequisites..."
 
-    # Update package cache
-    dnf makecache --quiet
-
-    # Install required packages
     local packages=(
         curl
         wget
@@ -72,10 +87,15 @@ install_prerequisites() {
         tar
     )
 
+    log_info "Detected $OS $OS_VERSION"
+
+    # Update package cache
+    apt-get update -qq
+
     for package in "${packages[@]}"; do
-        if ! rpm -q "$package" &> /dev/null; then
+        if ! dpkg -l | grep -qw "$package"; then
             log_info "Installing $package..."
-            dnf install -y "$package" > /dev/null 2>&1
+            apt-get install -y "$package" > /dev/null 2>&1
         else
             log_info "$package is already installed"
         fi
@@ -88,58 +108,27 @@ install_prerequisites() {
 configure_firewall() {
     log_info "Configuring firewall for K3s..."
 
-    # Check if firewalld is available and not masked
-    if systemctl list-unit-files | grep -q "^firewalld.service.*masked"; then
-        log_warning "firewalld is masked. Skipping firewall configuration."
-        log_warning "Ensure your network/router provides adequate protection."
-        return 0
-    fi
+    # Ubuntu/Debian use ufw, but it's usually not enabled by default
+    if command -v ufw &> /dev/null; then
+        if ufw status | grep -q "Status: active"; then
+            log_info "UFW is active. Configuring K3s ports..."
 
-    # Check if firewalld is installed
-    if ! command -v firewall-cmd &> /dev/null; then
-        log_warning "firewalld is not installed. Skipping firewall configuration."
-        log_warning "Ensure your network/router provides adequate protection."
-        return 0
-    fi
+            # K3s server ports
+            ufw allow 6443/tcp comment 'K3s API' > /dev/null 2>&1
+            ufw allow 10250/tcp comment 'K3s Kubelet' > /dev/null 2>&1
+            ufw allow 8472/udp comment 'K3s Flannel VXLAN' > /dev/null 2>&1
+            ufw allow 51820/udp comment 'K3s Wireguard' > /dev/null 2>&1
+            ufw allow 51821/udp comment 'K3s Wireguard' > /dev/null 2>&1
 
-    # Check if firewalld is running
-    if ! systemctl is-active --quiet firewalld; then
-        log_warning "firewalld is not running."
-        read -p "Do you want to start firewalld? (y/N): " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            systemctl start firewalld
-            systemctl enable firewalld
-            log_success "firewalld started and enabled"
+            log_success "UFW configured for K3s"
         else
-            log_warning "Skipping firewall configuration."
-            log_warning "Ensure your network/router provides adequate protection."
-            return 0
+            log_info "UFW is installed but not active. Skipping firewall configuration."
+            log_warning "For home lab behind router, this is usually fine."
         fi
+    else
+        log_info "No firewall detected. Skipping firewall configuration."
+        log_warning "Ensure your network/router provides adequate protection."
     fi
-
-    # K3s server ports
-    local ports=(
-        "6443/tcp"   # Kubernetes API
-        "10250/tcp"  # Kubelet metrics
-        "8472/udp"   # Flannel VXLAN
-        "51820/udp"  # Flannel Wireguard (if used)
-        "51821/udp"  # Flannel Wireguard (if used)
-    )
-
-    for port in "${ports[@]}"; do
-        if ! firewall-cmd --list-ports | grep -q "$port"; then
-            log_info "Opening port $port..."
-            firewall-cmd --permanent --add-port="$port" > /dev/null 2>&1
-        else
-            log_info "Port $port is already open"
-        fi
-    done
-
-    # Reload firewall
-    firewall-cmd --reload > /dev/null 2>&1
-
-    log_success "Firewall configured"
 }
 
 # Disable swap (recommended for Kubernetes)
@@ -295,14 +284,18 @@ display_cluster_info() {
     echo
 
     log_info "Next steps:"
-    echo "  1. Run ./bootstrap-k3s.sh to install additional components"
-    echo "  2. Deploy your applications"
+    echo "  1. Deploy your applications with kubectl"
+    echo "  2. Access cluster: kubectl get nodes"
     echo
 }
 
 # Main installation flow
 main() {
-    log_info "Starting K3s installation on Rocky Linux..."
+    # Detect OS first
+    detect_os
+
+    log_info "Starting K3s installation..."
+    log_info "Detected OS: $OS $OS_VERSION"
     echo
 
     check_root
