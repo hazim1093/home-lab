@@ -51,8 +51,6 @@ check_k3s_installed() {
 
 # Get server IP address
 get_server_ip() {
-    log_info "Detecting server IP address..."
-
     # Try to get the primary network interface IP
     local ip_addr
 
@@ -65,8 +63,7 @@ get_server_ip() {
     fi
 
     if [[ -z "$ip_addr" ]]; then
-        log_error "Could not detect server IP address"
-        exit 1
+        return 1
     fi
 
     echo "$ip_addr"
@@ -150,7 +147,11 @@ main() {
     check_k3s_installed
 
     # Get server IP
-    server_ip=$(get_server_ip)
+    log_info "Detecting server IP address..."
+    if ! server_ip=$(get_server_ip); then
+        log_error "Could not detect server IP address"
+        exit 1
+    fi
     log_success "Detected server IP: $server_ip"
 
     # Allow custom output file
