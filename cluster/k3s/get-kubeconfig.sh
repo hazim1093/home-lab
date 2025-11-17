@@ -86,7 +86,7 @@ generate_kubeconfig() {
     fi
 
     # Copy kubeconfig and replace localhost with server IP
-    sed "s/127.0.0.1/${server_ip}/g" /etc/rancher/k3s/k3s.yaml > "$output_file"
+    sed "s/127\\.0\\.0\\.1/${server_ip}/g" /etc/rancher/k3s/k3s.yaml > "$output_file"
 
     # Set proper permissions
     chmod 600 "$output_file"
