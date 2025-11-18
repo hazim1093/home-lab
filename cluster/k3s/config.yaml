@@ -18,8 +18,8 @@ service-cidr: "10.43.0.0/16"
 
 # Kubelet configuration
 # Enable metrics for kubectl top
-kubelet-arg:
-  - "resolv-conf=/etc/resolv.conf"
+# kubelet-arg:
+#   - "resolv-conf=/etc/resolv.conf"
 
 # TLS settings
 # Use system certificates
