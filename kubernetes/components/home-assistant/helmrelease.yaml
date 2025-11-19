@@ -21,3 +21,11 @@ spec:
     service:
       type: ClusterIP
       port: 8123
+    additionalVolumes:
+      - name: config
+        configMap:
+          name: home-assistant-config
+    additionalMounts:
+      - name: config
+        mountPath: /config/configuration.yaml
+        subPath: configuration.yaml
