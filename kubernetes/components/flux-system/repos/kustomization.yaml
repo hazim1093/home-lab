@@ -5,3 +5,4 @@ resources:
 - home-assistant.yaml
 - mojo2600.yaml
 - traefik.yaml
+- metallb.yaml

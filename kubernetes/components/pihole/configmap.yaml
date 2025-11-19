@@ -4,7 +4,6 @@ metadata:
   name: pihole-custom-dnsmasq
   namespace: pihole
 data:
-  # Custom DNS records - update TRAEFIK_IP with your Traefik LoadBalancer IP
   02-custom.conf: |
-    address=/homeassistant.local/TRAEFIK_IP
-    address=/pihole.local/TRAEFIK_IP
+    address=/homeassistant.local/192.168.0.200
+    address=/pihole.local/192.168.0.200
