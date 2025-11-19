@@ -24,4 +24,3 @@ spec:
     name: '*'
   - kind: Kustomization
     name: '*'
-  summary: "{{ .InvolvedObject.Kind }}/{{ .InvolvedObject.Name }} in {{ .InvolvedObject.Namespace }}: {{ .Severity }}"
