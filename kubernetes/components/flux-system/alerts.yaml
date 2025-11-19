@@ -1,0 +1,28 @@
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Provider
+metadata:
+  name: slack-provider
+  namespace: flux-system
+spec:
+  type: slack
+  secretRef:
+    name: slack-webhook-url
+---
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: flux-system-alert
+  namespace: flux-system
+spec:
+  providerRef:
+    name: slack-provider
+  eventSeverity: info
+  eventSources:
+  - kind: GitRepository
+    name: '*'
+  - kind: HelmRelease
+    name: '*'
+  - kind: Kustomization
+    name: '*'
+  summary: |
+    "{{ .InvolvedObject.Kind }}/{{ .InvolvedObject.Name }} in {{ .InvolvedObject.Namespace }}: {{ .Severity }}"
