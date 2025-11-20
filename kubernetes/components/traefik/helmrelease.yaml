@@ -26,3 +26,4 @@ spec:
         web:
           port: 8000
           protocol: HTTP
+          namespacePolicy: All
