@@ -25,10 +25,10 @@ spec:
     DNS1: "unbound.unbound.svc.cluster.local"
     DNS2: "unbound.unbound.svc.cluster.local"
     extraVolumes:
-    - name: custom-dnsmasq
-      configMap:
-        name: pihole-custom-dnsmasq
+      custom-dnsmasq:
+        configMap:
+          name: pihole-custom-dnsmasq
     extraVolumeMounts:
-    - name: custom-dnsmasq
-      mountPath: /etc/dnsmasq.d/02-custom.conf
-      subPath: 02-custom.conf
+      custom-dnsmasq:
+        mountPath: /etc/dnsmasq.d/02-custom.conf
+        subPath: 02-custom.conf
