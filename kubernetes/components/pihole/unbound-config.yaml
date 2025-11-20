@@ -34,7 +34,8 @@ data:
       num-threads: 1
 
       # Ensure kernel buffer is large enough to not lose messages in traffic spikes
-      so-rcvbuf: 1m
+      # Note: Container may have lower limits, 425984 is typical max
+      so-rcvbuf: 0
 
       # Ensure privacy of local IP ranges
       private-address: 192.168.0.0/16
