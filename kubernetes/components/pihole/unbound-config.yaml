@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: unbound-config
+  namespace: pihole
+data:
+  unbound.conf: |
+    server:
+      verbosity: 0
+      interface: 127.0.0.1
+      port: 5335
+      do-ip4: yes
+      do-udp: yes
+      do-tcp: yes
+      do-ip6: no
+      prefer-ip6: no
+
+      # Trust glue only if it is within the server's authority
+      harden-glue: yes
+
+      # Require DNSSEC data for trust-anchored zones
+      harden-dnssec-stripped: yes
+
+      # Don't use Capitalization randomization
+      use-caps-for-id: no
+
+      # Reduce EDNS reassembly buffer size
+      edns-buffer-size: 1232
+
+      # Perform prefetching of close to expired message cache entries
+      prefetch: yes
+
+      # One thread should be sufficient, can be increased on beefy machines
+      num-threads: 1
+
+      # Ensure kernel buffer is large enough to not lose messages in traffic spikes
+      so-rcvbuf: 1m
+
+      # Ensure privacy of local IP ranges
+      private-address: 192.168.0.0/16
+      private-address: 169.254.0.0/16
+      private-address: 172.16.0.0/12
+      private-address: 10.0.0.0/8
+      private-address: fd00::/8
+      private-address: fe80::/10
