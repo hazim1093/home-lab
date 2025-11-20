@@ -27,11 +27,3 @@ spec:
           requests:
             memory: 64Mi
             cpu: 50m
-        volumeMounts:
-        - name: config
-          mountPath: /opt/unbound/etc/unbound/unbound.conf
-          subPath: unbound.conf
-      volumes:
-      - name: config
-        configMap:
-          name: unbound-config
