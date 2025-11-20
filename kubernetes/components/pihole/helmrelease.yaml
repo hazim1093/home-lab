@@ -24,11 +24,7 @@ spec:
       type: ClusterIP
     DNS1: "unbound.unbound.svc.cluster.local"
     DNS2: "unbound.unbound.svc.cluster.local"
-    extraVolumes:
-      custom-dnsmasq:
-        configMap:
-          name: pihole-custom-dnsmasq
-    extraVolumeMounts:
-      custom-dnsmasq:
-        mountPath: /etc/dnsmasq.d/02-custom.conf
-        subPath: 02-custom.conf
+    dnsmasq:
+      customDnsEntries:
+      - address=/homeassistant.local/192.168.0.200
+      - address=/pihole.local/192.168.0.200
