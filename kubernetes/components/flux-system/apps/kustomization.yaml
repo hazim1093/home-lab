@@ -6,4 +6,3 @@ resources:
 - traefik.yaml
 - home-assistant.yaml
 - pihole.yaml
-- unbound.yaml
