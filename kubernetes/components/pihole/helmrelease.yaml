@@ -31,9 +31,9 @@ spec:
 
     # unbound
     extraVolumes:
-    - name: unbound-config
-      configMap:
-        name: unbound-config
+      unbound-config:
+        configMap:
+          name: unbound-config
     extraContainers:
     - name: unbound
       image: mvance/unbound:1.21.0
