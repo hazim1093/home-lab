@@ -26,8 +26,8 @@ spec:
     DNS2: "127.0.0.1#5335"
     dnsmasq:
       customDnsEntries:
-      - address=/homeassistant.local/192.168.0.200
-      - address=/pihole.local/192.168.0.200
+      - address=/homeassistant.home/192.168.0.200
+      - address=/pihole.home/192.168.0.200
 
     # unbound
     extraVolumes:
