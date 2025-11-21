@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
 - metallb.yaml
 - metallb-config.yaml
+- cert-manager.yaml
 - traefik.yaml
 - home-assistant.yaml
 - pihole.yaml

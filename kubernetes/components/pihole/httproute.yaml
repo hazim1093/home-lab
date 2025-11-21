@@ -7,8 +7,12 @@ spec:
   parentRefs:
   - name: traefik-gateway
     namespace: traefik
+    sectionName: web
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: websecure
   hostnames:
-  - "pihole.local"
+  - "pihole.lab"
   rules:
   - matches:
     - path:
