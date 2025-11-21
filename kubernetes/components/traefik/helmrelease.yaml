@@ -39,7 +39,8 @@ spec:
           mode: Terminate
     ports:
       web:
-        redirectTo:
-          port: websecure
-          scheme: https
-          permanent: true
+        redirections:
+          entryPoint:
+            to: websecure
+            scheme: https
+            permanent: true
