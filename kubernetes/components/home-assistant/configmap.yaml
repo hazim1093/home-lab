@@ -19,5 +19,12 @@ data:
     script: !include scripts.yaml
     scene: !include scenes.yaml
 
+    # MQTT Integration for Zigbee2MQTT
+    mqtt:
+      broker: mosquitto.mosquitto.svc.cluster.local
+      port: 1883
+      discovery: true
+      discovery_prefix: homeassistant
+
     # Backups
     backup:
