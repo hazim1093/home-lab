@@ -28,6 +28,7 @@ spec:
       customDnsEntries:
       - address=/homeassistant.local/192.168.0.200
       - address=/pihole.local/192.168.0.200
+      - address=/mosquitto.local/192.168.0.200
 
     # unbound
     extraVolumes:
