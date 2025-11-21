@@ -4,6 +4,7 @@ resources:
 - metallb.yaml
 - metallb-config.yaml
 - cert-manager.yaml
+- cert-manager-issuers.yaml
 - traefik.yaml
 - home-assistant.yaml
 - pihole.yaml
