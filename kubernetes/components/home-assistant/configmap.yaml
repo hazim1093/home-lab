@@ -26,5 +26,19 @@ data:
       discovery: true
       discovery_prefix: homeassistant
 
+    # Yeelight WiFi bulbs
+    yeelight:
+      discovery: true
+
+    # Xiaomi MIoT WiFi devices (vacuums, purifiers, etc.)
+    # Note: xiaomi_miot is a HACS integration for full MIoT support
+    # Built-in xiaomi_miio provides basic support
+    xiaomi_miio:
+      discovery: true
+
+    # Tuya/Gosund WiFi devices
+    # Note: Configure via UI (Settings > Integrations > Add > Tuya)
+    # Requires Tuya IoT Platform account for cloud API access
+
     # Backups
     backup:
