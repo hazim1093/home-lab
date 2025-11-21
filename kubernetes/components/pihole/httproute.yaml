@@ -8,7 +8,7 @@ spec:
   - name: traefik-gateway
     namespace: traefik
   hostnames:
-  - "pihole.internal"
+  - "pihole.local"
   rules:
   - matches:
     - path:
