@@ -29,3 +29,37 @@ spec:
       - name: config
         mountPath: /config/configuration.yaml
         subPath: configuration.yaml
+    initContainers:
+      - name: install-hacs
+        image: busybox:1.36
+        command:
+          - sh
+          - -c
+          - |
+            # Create custom_components directory
+            mkdir -p /config/custom_components
+
+            # Download and install HACS
+            if [ ! -d "/config/custom_components/hacs" ]; then
+              echo "Installing HACS..."
+              wget -qO /tmp/hacs.zip https://github.com/hacs/integration/releases/latest/download/hacs.zip
+              unzip -q /tmp/hacs.zip -d /config/custom_components/hacs
+              rm /tmp/hacs.zip
+              echo "HACS installed"
+            else
+              echo "HACS already installed"
+            fi
+
+            # Download and install xiaomi_miot
+            if [ ! -d "/config/custom_components/xiaomi_miot" ]; then
+              echo "Installing xiaomi_miot..."
+              wget -qO /tmp/xiaomi_miot.zip https://github.com/al-one/hass-xiaomi-miot/releases/latest/download/xiaomi_miot.zip
+              unzip -q /tmp/xiaomi_miot.zip -d /config/custom_components/
+              rm /tmp/xiaomi_miot.zip
+              echo "xiaomi_miot installed"
+            else
+              echo "xiaomi_miot already installed"
+            fi
+        volumeMounts:
+          - name: home-assistant
+            mountPath: /config
