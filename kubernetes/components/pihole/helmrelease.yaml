@@ -15,6 +15,12 @@ spec:
         namespace: flux-system
       interval: 12h
   values:
+    replicaCount: 2
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 50m
+
     adlists:
     # StevenBlack's Unified Hosts (ads + malware)
     - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
@@ -49,7 +55,7 @@ spec:
     DNS1: "127.0.0.1#5335" # unbound
     DNS2: "127.0.0.1#5335"
     ftl:
-      MAXDBDAYS: 1
+      MAXDBDAYS: 3
     dnsmasq:
       customDnsEntries:
       - address=/homeassistant.lab/192.168.0.200
