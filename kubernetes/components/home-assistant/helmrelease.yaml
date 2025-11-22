@@ -25,12 +25,15 @@ spec:
       - name: config
         configMap:
           name: home-assistant-config
+      - name: custom-components
+        configMap:
+          name: home-assistant-custom-components
     additionalMounts:
       - name: config
         mountPath: /config/configuration.yaml
         subPath: configuration.yaml
     initContainers:
-      - name: install-hacs
+      - name: install-custom-components
         image: busybox:1.36
         command:
           - sh
@@ -39,27 +42,30 @@ spec:
             # Create custom_components directory
             mkdir -p /config/custom_components
 
-            # Download and install HACS
-            if [ ! -d "/config/custom_components/hacs" ]; then
-              echo "Installing HACS..."
-              wget -qO /tmp/hacs.zip https://github.com/hacs/integration/releases/latest/download/hacs.zip
-              unzip -q /tmp/hacs.zip -d /config/custom_components/hacs
-              rm /tmp/hacs.zip
-              echo "HACS installed"
-            else
-              echo "HACS already installed"
-            fi
+            # Read components list and install each
+            while IFS='|' read -r name url extract_to_subdir || [ -n "$name" ]; do
+              # Skip empty lines and comments
+              [ -z "$name" ] && continue
+              echo "$name" | grep -q '^#' && continue
 
-            # Download and install xiaomi_miot
-            if [ ! -d "/config/custom_components/xiaomi_miot" ]; then
-              echo "Installing xiaomi_miot..."
-              wget -qO /tmp/xiaomi_miot.zip https://github.com/al-one/hass-xiaomi-miot/releases/latest/download/xiaomi_miot.zip
-              unzip -q /tmp/xiaomi_miot.zip -d /config/custom_components/
-              rm /tmp/xiaomi_miot.zip
-              echo "xiaomi_miot installed"
-            else
-              echo "xiaomi_miot already installed"
-            fi
+              if [ ! -d "/config/custom_components/$name" ]; then
+                echo "Installing $name..."
+                wget -qO /tmp/component.zip "$url"
+                if [ "$extract_to_subdir" = "true" ]; then
+                  # Extract to a subdirectory with the component name
+                  unzip -q /tmp/component.zip -d /config/custom_components/$name
+                else
+                  # Extract directly (zip contains folder structure)
+                  unzip -q /tmp/component.zip -d /config/custom_components/
+                fi
+                rm /tmp/component.zip
+                echo "$name installed"
+              else
+                echo "$name already installed"
+              fi
+            done < /custom-components/components.txt
         volumeMounts:
           - name: home-assistant
             mountPath: /config
+          - name: custom-components
+            mountPath: /custom-components
