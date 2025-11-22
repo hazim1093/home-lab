@@ -25,7 +25,47 @@ spec:
       - name: config
         configMap:
           name: home-assistant-config
+      - name: custom-components
+        configMap:
+          name: home-assistant-custom-components
     additionalMounts:
       - name: config
         mountPath: /config/configuration.yaml
         subPath: configuration.yaml
+    initContainers:
+      - name: install-custom-components
+        image: busybox:1.36
+        command:
+          - sh
+          - -c
+          - |
+            # Create custom_components directory
+            mkdir -p /config/custom_components
+
+            # Read components list and install each
+            while IFS='|' read -r name url extract_to_subdir || [ -n "$name" ]; do
+              # Skip empty lines and comments
+              [ -z "$name" ] && continue
+              echo "$name" | grep -q '^#' && continue
+
+              if [ ! -d "/config/custom_components/$name" ]; then
+                echo "Installing $name..."
+                wget -qO /tmp/component.zip "$url"
+                if [ "$extract_to_subdir" = "true" ]; then
+                  # Extract to a subdirectory with the component name
+                  unzip -q /tmp/component.zip -d /config/custom_components/$name
+                else
+                  # Extract directly (zip contains folder structure)
+                  unzip -q /tmp/component.zip -d /config/custom_components/
+                fi
+                rm /tmp/component.zip
+                echo "$name installed"
+              else
+                echo "$name already installed"
+              fi
+            done < /custom-components/components.txt
+        volumeMounts:
+          - name: home-assistant
+            mountPath: /config
+          - name: custom-components
+            mountPath: /custom-components
