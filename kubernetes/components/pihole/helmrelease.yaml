@@ -48,6 +48,8 @@ spec:
       type: ClusterIP
     DNS1: "127.0.0.1#5335" # unbound
     DNS2: "127.0.0.1#5335"
+    ftl:
+      MAXDBDAYS: 1
     dnsmasq:
       customDnsEntries:
       - address=/homeassistant.lab/192.168.0.200
