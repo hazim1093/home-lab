@@ -21,16 +21,14 @@ RustDesk is a self-hosted remote desktop solution that allows you to access your
 
 ### 1. Get Server Public Key
 
-The server generates a unique public key on first deployment. You need this key to configure all clients.
-
 ```bash
-# Get the public key
-kubectl exec -n rustdesk \
+kubectl debug -n rustdesk \
   $(kubectl get pod -n rustdesk -l app.kubernetes.io/name=rustdesk-server-oss -o jsonpath='{.items[0].metadata.name}') \
-  -c rustdesk-server-hbbs -- cat /root/id_ed25519.pub
+  -it --image=busybox --target=rustdesk-server-hbbs --share-processes \
+  -- cat /proc/1/root/root/id_ed25519.pub
 ```
 
-**Important**: Save this key securely. All clients need this key to connect.
+Save this key - all clients need it to connect.
 
 ## Client Configuration
 
