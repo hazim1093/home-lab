@@ -8,3 +8,4 @@ resources:
 - traefik.yaml
 - home-assistant.yaml
 - pihole.yaml
+- rustdesk.yaml

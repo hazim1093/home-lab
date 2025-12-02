@@ -1,0 +1,69 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: rustdesk
+  namespace: rustdesk
+spec:
+  interval: 12h
+  chart:
+    spec:
+      chart: rustdesk-server-oss
+      version: "0.2.3"
+      sourceRef:
+        kind: HelmRepository
+        name: pschichtel
+        namespace: flux-system
+      interval: 12h
+  values:
+    replicaCount: 1
+
+    service:
+      type: LoadBalancer
+      # Assign specific IP from MetalLB pool
+      loadBalancerIP: "192.168.0.203"
+      # Preserve client source IP addresses
+      externalTrafficPolicy: Local
+
+      # RustDesk requires these ports:
+      hbbr:
+        replayPort:
+          port: 21117
+          targetPort: 21117
+        clientPort:
+          port: 21119
+          targetPort: 21119
+      hbbs:
+        natPort:
+          port: 21115
+          targetPort: 21115
+        registryPort:
+          port: 21116
+          targetPort: 21116
+        heartbeatPort:
+          port: 21116
+          targetPort: 21116
+        webPort:
+          port: 21118
+          targetPort: 21118
+
+    resources:
+      hbbsResource:
+        requests:
+          memory: 128Mi
+          cpu: 100m
+        limits:
+          memory: 256Mi
+          cpu: 200m
+      hbbrResource:
+        requests:
+          memory: 128Mi
+          cpu: 100m
+        limits:
+          memory: 256Mi
+          cpu: 200m
+
+    # Persistent storage for database and configuration
+    # Without this, connection data and keys are lost on pod restart
+    volume:
+      persistentVolumeClaim:
+        claimName: rustdesk-data

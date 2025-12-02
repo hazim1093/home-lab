@@ -6,3 +6,4 @@ resources:
 - mojo2600.yaml
 - traefik.yaml
 - metallb.yaml
+- pschichtel.yaml
