@@ -20,7 +20,7 @@ spec:
                 - name: RENOVATE_AUTODISCOVER
                   value: "false"
                 - name: RENOVATE_REPOSITORIES
-                  value: "hazim/home-lab"  # Replace with your GitHub repo
+                  value: "hazim1093/home-lab"
                 - name: RENOVATE_TOKEN
                   valueFrom:
                     secretKeyRef:
