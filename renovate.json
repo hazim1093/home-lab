@@ -1,0 +1,50 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "kubernetes": {
+    "fileMatch": [
+      "kubernetes/.+\\.yaml$"
+    ]
+  },
+  "flux": {
+    "fileMatch": [
+      "kubernetes/.+\\.yaml$"
+    ]
+  },
+  "docker": {
+    "enabled": true,
+    "fileMatch": [
+      "kubernetes/.+\\.yaml$"
+    ]
+  },
+  "helm-values": {
+    "fileMatch": [
+      "kubernetes/.+\\.yaml$"
+    ]
+  },
+  "regexManagers": [
+    {
+      "fileMatch": [
+        "kubernetes/.+\\.yaml$"
+      ],
+      "matchStrings": [
+        "version:\\s+\"(?<currentValue>.+?)\"\\s+# renovate: datasource=(?<datasource>.+?) depName=(?<depName>.+?)(?: versioning=(?<versioning>.+?))?\\s"
+      ]
+    }
+  ],
+  "packageRules": [
+    {
+      "matchDatasources": ["helm"],
+      "groupName": "Helm releases"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "groupName": "Container images"
+    }
+  ]
+}

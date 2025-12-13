@@ -9,3 +9,4 @@ resources:
 - home-assistant.yaml
 - pihole.yaml
 - rustdesk.yaml
+- renovate.yaml
