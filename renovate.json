@@ -16,19 +16,14 @@
       "kubernetes/.+\\.yaml$"
     ]
   },
-  "docker": {
-    "enabled": true,
-    "fileMatch": [
-      "kubernetes/.+\\.yaml$"
-    ]
-  },
   "helm-values": {
     "fileMatch": [
       "kubernetes/.+\\.yaml$"
     ]
   },
-  "regexManagers": [
+  "customManagers": [
     {
+      "customType": "regex",
       "fileMatch": [
         "kubernetes/.+\\.yaml$"
       ],
@@ -39,11 +34,24 @@
   ],
   "packageRules": [
     {
-      "matchDatasources": ["helm"],
+      "matchCategories": [
+        "docker"
+      ],
+      "enabled": true,
+      "fileMatch": [
+        "kubernetes/.+\\.yaml$"
+      ]
+    },
+    {
+      "matchDatasources": [
+        "helm"
+      ],
       "groupName": "Helm releases"
     },
     {
-      "matchDatasources": ["docker"],
+      "matchDatasources": [
+        "docker"
+      ],
       "groupName": "Container images"
     }
   ]
