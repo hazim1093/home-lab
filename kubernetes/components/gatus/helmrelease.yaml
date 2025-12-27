@@ -46,6 +46,7 @@ spec:
         args:
           - --auto-httproute
           - --gateway-name=traefik-gateway
+          - --gateway-namespace=traefik
           - --output=/config/gatus-sidecar.yaml
           - --default-interval=1m
         volumeMounts:
