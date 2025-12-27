@@ -5,6 +5,9 @@ metadata:
   namespace: gatus
 spec:
   interval: 12h
+  upgrade:
+    remediation:
+      retries: 5
   chart:
     spec:
       chart: gatus
