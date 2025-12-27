@@ -3,6 +3,5 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - rbac.yaml
-  - config.yaml
   - helmrelease.yaml
   - httproute.yaml
