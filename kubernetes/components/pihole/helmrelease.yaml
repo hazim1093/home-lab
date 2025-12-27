@@ -56,13 +56,12 @@ spec:
     DNS2: "127.0.0.1#5335"
     ftl:
       MAXDBDAYS: 3
-    # dnsmasq:
-    #   customDnsEntries:
-    #   # Managed by external-dns automatically from HTTPRoutes
-    #   - address=/homeassistant.lab/192.168.0.200
-    #   - address=/pihole.lab/192.168.0.200
-    #   - address=/rustdesk.lab/192.168.0.203
-    #   - address=/gatus.lab/192.168.0.200
+    dnsmasq:
+      customDnsEntries:
+      - address=/homeassistant.lab/192.168.0.200
+      - address=/pihole.lab/192.168.0.200
+      - address=/rustdesk.lab/192.168.0.203
+      - address=/gatus.lab/192.168.0.200
 
     # unbound
     extraVolumes:
