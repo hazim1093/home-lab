@@ -95,7 +95,7 @@ spec:
     # Add gatus-sidecar container for auto-discovery of HTTPRoutes
     sidecarContainers:
       gatus-sidecar:
-        image: ghcr.io/home-operations/gatus-sidecar:v0.3.0
+        image: ghcr.io/home-operations/gatus-sidecar:latest
         imagePullPolicy: IfNotPresent
         args:
           - --auto-httproute
