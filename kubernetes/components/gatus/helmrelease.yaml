@@ -101,11 +101,10 @@ spec:
         image: ghcr.io/home-operations/gatus-sidecar:latest
         imagePullPolicy: IfNotPresent
         args:
-          - --auto-httproute
-          - --gateway-name=traefik-gateway
-          - --gateway-namespace=traefik
-          - --output=/config/gatus-sidecar.yaml
-          - --default-interval=1m
+          - -auto-httproute
+          - -gateway-name=traefik-gateway
+          - -output=/config/gatus-sidecar.yaml
+          - -default-interval=1m
         volumeMounts:
           - name: config
             mountPath: /config
