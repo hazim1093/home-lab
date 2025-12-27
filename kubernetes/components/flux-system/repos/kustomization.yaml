@@ -8,3 +8,4 @@ resources:
 - metallb.yaml
 - pschichtel.yaml
 - twin.yaml
+- external-dns.yaml
