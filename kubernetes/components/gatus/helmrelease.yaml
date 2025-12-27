@@ -77,13 +77,10 @@ spec:
               success-threshold: 2
               send-on-resolved: true
 
-      # HTTPRoute endpoints will be auto-discovered by gatus-sidecar
-      # and written to /config/gatus-sidecar.yaml
-      external-endpoints:
-        - /config/gatus-sidecar.yaml
-
     # Environment variables for substitution in config
     env:
+      - name: GATUS_CONFIG_PATH
+        value: /config
       - name: SLACK_WEBHOOK_URL
         valueFrom:
           secretKeyRef:
