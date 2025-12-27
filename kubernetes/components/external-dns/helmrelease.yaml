@@ -23,8 +23,6 @@ spec:
     - --pihole-server=http://pihole-web.pihole.svc.cluster.local
     - --pihole-password=$(PIHOLE_PASSWORD)
     - --pihole-tls-skip-verify
-    - --registry=noop
-    - --txt-owner-id=external-dns
 
     env:
     - name: PIHOLE_PASSWORD
@@ -41,6 +39,9 @@ spec:
     # Domain filter - only manage .lab domains
     domainFilters:
     - lab
+
+    # Registry: noop (Pi-hole doesn't support TXT records)
+    registry: noop
 
     # Policy: upsert-only (don't delete manual entries)
     policy: upsert-only
