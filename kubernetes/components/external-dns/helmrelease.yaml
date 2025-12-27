@@ -20,27 +20,30 @@ spec:
 
     # Pi-hole configuration
     extraArgs:
-      - --pihole-server=http://pihole-web.pihole.svc.cluster.local
-      - --pihole-password=$(PIHOLE_PASSWORD)
-      - --pihole-tls-skip-verify
+    - --pihole-server=http://pihole-web.pihole.svc.cluster.local
+    - --pihole-password=$(PIHOLE_PASSWORD)
+    - --pihole-tls-skip-verify
+    - --registry=noop
+    - --txt-owner-id=external-dns
 
     env:
-      - name: PIHOLE_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: pihole-password
-            key: password
+    - name: PIHOLE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: pihole-password
+          key: password
+          optional: false
 
     # Watch HTTPRoutes
     sources:
-      - gateway-httproute
+    - gateway-httproute
 
     # Domain filter - only manage .lab domains
     domainFilters:
-      - lab
+    - lab
 
-    # Policy: sync (manage all records)
-    policy: sync
+    # Policy: upsert-only (don't delete manual entries)
+    policy: upsert-only
 
     # Logging
-    logLevel: info
+    logLevel: debug
