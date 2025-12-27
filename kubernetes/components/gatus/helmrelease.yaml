@@ -25,8 +25,10 @@ spec:
       enabled: true
       size: 200Mi
 
-    # Configure Gatus
+    # Configure Gatus - this will be the base config.yaml
     config:
+      # Enable directory-based config loading
+      # Gatus will merge all .yaml files from /config/
       storage:
         type: sqlite
         path: /data/data.db
@@ -59,24 +61,6 @@ spec:
               success-threshold: 2
               send-on-resolved: true
 
-        # Unbound DNS - verify upstream resolver is working
-        - name: Unbound DNS (upstream)
-          group: DNS Services
-          url: "pihole-dns-udp.pihole.svc.cluster.local:53"
-          interval: 60s
-          dns:
-            query-name: "cloudflare.com"
-            query-type: "A"
-          conditions:
-            - "[DNS_RCODE] == NOERROR"
-            - "[BODY] == pat(*.*.*.*)"
-          alerts:
-            - type: slack
-              description: "Unbound DNS resolver is not responding"
-              failure-threshold: 3
-              success-threshold: 2
-              send-on-resolved: true
-
     # Environment variables for substitution in config
     env:
       GATUS_CONFIG_PATH: /config
@@ -86,6 +70,27 @@ spec:
             name: slack-webhook-url
             key: url
             optional: false
+
+    # Copy ConfigMap to writable volume on init
+    extraInitContainers:
+      - name: copy-config
+        image: busybox:latest
+        command:
+          - sh
+          - -c
+          - |
+            cp /config-ro/config.yaml /config/config.yaml
+            echo "Config copied to writable volume"
+        volumeMounts:
+          - name: gatus-config
+            mountPath: /config-ro
+          - name: config
+            mountPath: /config
+
+    # Mount writable config directory in main container
+    extraVolumeMounts:
+      - name: config
+        mountPath: /config
 
     # Add gatus-sidecar container for auto-discovery of HTTPRoutes
     sidecarContainers:
