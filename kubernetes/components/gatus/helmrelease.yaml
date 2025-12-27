@@ -67,7 +67,7 @@ spec:
 
     # Environment variables for substitution in config
     env:
-      GATUS_CONFIG_PATH: /config
+      GATUS_CONFIG_PATH: /config-merged
       SLACK_WEBHOOK_URL:
         valueFrom:
           secretKeyRef:
@@ -83,18 +83,18 @@ spec:
           - sh
           - -c
           - |
-            cp /config-ro/config.yaml /config/config.yaml
+            cp /config/config.yaml /config-merged/config.yaml
             echo "Config copied to writable volume"
         volumeMounts:
           - name: gatus-config
-            mountPath: /config-ro
-          - name: config
             mountPath: /config
+          - name: config-merged
+            mountPath: /config-merged
 
     # Mount writable config directory in main container
     extraVolumeMounts:
-      - name: config
-        mountPath: /config
+      - name: config-merged
+        mountPath: /config-merged
 
     # Add gatus-sidecar container for auto-discovery of HTTPRoutes
     sidecarContainers:
@@ -104,11 +104,11 @@ spec:
         args:
           - -auto-httproute
           - -gateway-name=traefik-gateway
-          - -output=/config/gatus-sidecar.yaml
+          - -output=/config-merged/gatus-sidecar.yaml
           - -default-interval=1m
         volumeMounts:
-          - name: config
-            mountPath: /config
+          - name: config-merged
+            mountPath: /config-merged
         resources:
           requests:
             memory: 32Mi
