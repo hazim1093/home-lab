@@ -4,7 +4,11 @@ Automated dependency updates for Kubernetes components.
 
 ## Setup
 
-Create secret with GitHub token:
+1. Create a GitHub Personal Access Token (classic) with these permissions:
+   - `repo` (Full control of private repositories)
+   - `workflow` (Update GitHub Action workflows)
+
+2. Create secret:
 
 ```bash
 kubectl create secret generic renovate-secret \
@@ -12,7 +16,7 @@ kubectl create secret generic renovate-secret \
   --from-literal=token=YOUR_GITHUB_TOKEN
 ```
 
-Update repository name in `cronjob.yaml` to match your GitHub repo.
+3. Update repository name in `cronjob.yaml` to match your GitHub repo (e.g., `username/repo-name`)
 
 ## Trigger manually
 

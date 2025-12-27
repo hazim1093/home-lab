@@ -1,0 +1,60 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: gatus
+  namespace: gatus
+spec:
+  interval: 12h
+  chart:
+    spec:
+      chart: gatus
+      version: "1.4.4"
+      sourceRef:
+        kind: HelmRepository
+        name: twin
+        namespace: flux-system
+      interval: 12h
+  values:
+    # Use ServiceAccount for RBAC (created separately)
+    serviceAccount:
+      create: false
+      name: gatus
+
+    # Enable persistence
+    persistence:
+      enabled: true
+      size: 200Mi
+
+    # Configure Gatus using the config.yaml from ConfigMap
+    config:
+      existingConfigMap: gatus-config
+
+    # Environment variables for substitution in config
+    env:
+      - name: SLACK_WEBHOOK_URL
+        valueFrom:
+          secretKeyRef:
+            name: slack-webhook-url
+            key: url
+            optional: false
+
+    # Add gatus-sidecar container for auto-discovery of HTTPRoutes
+    extraContainers:
+      - name: gatus-sidecar
+        image: ghcr.io/home-operations/gatus-sidecar:v0.3.0
+        imagePullPolicy: IfNotPresent
+        args:
+          - --auto-httproute
+          - --gateway-name=traefik-gateway
+          - --output=/config/gatus-sidecar.yaml
+          - --default-interval=1m
+        volumeMounts:
+          - name: config
+            mountPath: /config
+        resources:
+          requests:
+            memory: 32Mi
+            cpu: 25m
+          limits:
+            memory: 64Mi
+            cpu: 100m

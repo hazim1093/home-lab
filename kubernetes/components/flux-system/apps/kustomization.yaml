@@ -10,3 +10,4 @@ resources:
 - pihole.yaml
 - rustdesk.yaml
 - renovate.yaml
+- gatus.yaml
