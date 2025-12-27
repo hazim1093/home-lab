@@ -5,6 +5,11 @@ metadata:
   namespace: home-assistant
   annotations:
     gatus.home-operations.com/enabled: "true"
+    gatus.home-operations.com/endpoint: |
+      url: "http://home-assistant.home-assistant.svc.cluster.local:8123"
+      interval: 60s
+      conditions:
+        - "[STATUS] == 200"
 spec:
   parentRefs:
   - name: traefik-gateway
