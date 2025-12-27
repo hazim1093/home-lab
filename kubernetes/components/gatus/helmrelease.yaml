@@ -45,7 +45,7 @@ spec:
         # Pi-hole DNS Service - queries via Pi-hole DNS server
         - name: Pi-hole DNS
           group: DNS Services
-          url: "pihole.pihole.svc.cluster.local"
+          url: "pihole-dns-udp.pihole.svc.cluster.local:53"
           interval: 60s
           dns:
             query-name: "google.com"
@@ -62,7 +62,7 @@ spec:
         # Unbound DNS - verify upstream resolver is working
         - name: Unbound DNS (upstream)
           group: DNS Services
-          url: "pihole.pihole.svc.cluster.local"
+          url: "pihole-dns-udp.pihole.svc.cluster.local:53"
           interval: 60s
           dns:
             query-name: "cloudflare.com"
@@ -79,9 +79,8 @@ spec:
 
     # Environment variables for substitution in config
     env:
-      - name: GATUS_CONFIG_PATH
-        value: /config
-      - name: SLACK_WEBHOOK_URL
+      GATUS_CONFIG_PATH: /config
+      SLACK_WEBHOOK_URL:
         valueFrom:
           secretKeyRef:
             name: slack-webhook-url
@@ -89,8 +88,8 @@ spec:
             optional: false
 
     # Add gatus-sidecar container for auto-discovery of HTTPRoutes
-    extraContainers:
-      - name: gatus-sidecar
+    sidecarContainers:
+      gatus-sidecar:
         image: ghcr.io/home-operations/gatus-sidecar:v0.3.0
         imagePullPolicy: IfNotPresent
         args:
