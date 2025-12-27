@@ -83,11 +83,18 @@ spec:
           - sh
           - -c
           - |
-            cp /config/config.yaml /config-merged/config.yaml
-            echo "Config copied to writable volume"
+            if [ -f /config-ro/config.yaml ]; then
+              cp /config-ro/config.yaml /config-merged/config.yaml
+              echo "Config copied to writable volume"
+            else
+              echo "ERROR: Source config not found at /config-ro/config.yaml"
+              ls -la /config-ro/ || echo "config-ro mount not found"
+              exit 1
+            fi
         volumeMounts:
           - name: gatus-config
-            mountPath: /config
+            mountPath: /config-ro
+            readOnly: true
           - name: config-merged
             mountPath: /config-merged
 
