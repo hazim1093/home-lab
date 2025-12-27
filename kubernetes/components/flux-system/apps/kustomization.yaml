@@ -11,4 +11,4 @@ resources:
 - rustdesk.yaml
 - renovate.yaml
 - gatus.yaml
-- external-dns.yaml
+# - external-dns.yaml
