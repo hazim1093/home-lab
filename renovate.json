@@ -46,7 +46,22 @@
       "matchDatasources": [
         "helm"
       ],
-      "groupName": "Helm releases"
+      "separateMajorMinor": true,
+      "separateMinorPatch": false,
+      "groupName": "{{depName}}",
+      "groupSlug": "helm-{{depName}}",
+      "commitMessageTopic": "{{depName}} Helm release"
+    },
+    {
+      "matchDatasources": [
+        "helm"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "groupName": "{{depName}} (major)",
+      "groupSlug": "helm-{{depName}}-major",
+      "commitMessageTopic": "{{depName}} Helm release"
     },
     {
       "matchDatasources": [
