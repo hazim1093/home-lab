@@ -6,26 +6,43 @@
   "schedule": [
     "before 6am on monday"
   ],
+  "terraform": {
+    "fileMatch": [
+      "/kubernetes/bootstrap/flux/.+\\.tf$"
+    ]
+  },
   "kubernetes": {
-    "managerFilePatterns": [
-      "/kubernetes/.+\\.yaml$/"
+    "fileMatch": [
+      "/kubernetes/components/.+\\.yaml$"
+    ],
+    "ignorePaths": [
+      "kubernetes/components/flux-system/**"
     ]
   },
   "flux": {
-    "managerFilePatterns": [
-      "/kubernetes/.+\\.yaml$/"
+    "fileMatch": [
+      "/kubernetes/components/.+\\.yaml$"
+    ],
+    "ignorePaths": [
+      "kubernetes/components/flux-system/**"
     ]
   },
   "helm-values": {
-    "managerFilePatterns": [
-      "/kubernetes/.+\\.yaml$/"
+    "fileMatch": [
+      "/kubernetes/components/.+\\.yaml$"
+    ],
+    "ignorePaths": [
+      "kubernetes/components/flux-system/**"
     ]
   },
   "customManagers": [
     {
       "customType": "regex",
-      "managerFilePatterns": [
-        "/kubernetes/.+\\.yaml$/"
+      "fileMatch": [
+        "/kubernetes/components/.+\\.yaml$"
+      ],
+      "ignorePaths": [
+        "kubernetes/components/flux-system/**"
       ],
       "matchStrings": [
         "version:\\s+\"(?<currentValue>.+?)\"\\s+# renovate: datasource=(?<datasource>.+?) depName=(?<depName>.+?)(?: versioning=(?<versioning>.+?))?\\s"
@@ -34,15 +51,37 @@
   ],
   "packageRules": [
     {
+      "description": "Ignore flux-system components - managed by Terraform",
+      "matchPaths": [
+        "kubernetes/components/flux-system/**"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Enable Terraform updates for Flux bootstrap",
+      "matchManagers": [
+        "terraform"
+      ],
+      "matchPaths": [
+        "kubernetes/bootstrap/flux/**"
+      ],
+      "enabled": true
+    },
+    {
+      "description": "Enable Docker updates in components (excluding flux-system)",
       "matchCategories": [
         "docker"
       ],
-      "enabled": true,
-      "managerFilePatterns": [
-        "/kubernetes/.+\\.yaml$/"
-      ]
+      "matchPaths": [
+        "kubernetes/components/**"
+      ],
+      "excludePaths": [
+        "kubernetes/components/flux-system/**"
+      ],
+      "enabled": true
     },
     {
+      "description": "Separate PRs for each Helm release - minor and patch grouped",
       "matchDatasources": [
         "helm"
       ],
@@ -53,6 +92,7 @@
       "commitMessageTopic": "{{depName}} Helm release"
     },
     {
+      "description": "Separate PRs for Helm major version updates",
       "matchDatasources": [
         "helm"
       ],
@@ -64,10 +104,27 @@
       "commitMessageTopic": "{{depName}} Helm release"
     },
     {
+      "description": "Separate PRs for each container image - minor and patch grouped",
       "matchDatasources": [
         "docker"
       ],
-      "groupName": "Container images"
+      "separateMajorMinor": true,
+      "separateMinorPatch": false,
+      "groupName": "{{depName}}",
+      "groupSlug": "container-{{depName}}",
+      "commitMessageTopic": "{{depName}} container image"
+    },
+    {
+      "description": "Separate PRs for container major version updates",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "groupName": "{{depName}} (major)",
+      "groupSlug": "container-{{depName}}-major",
+      "commitMessageTopic": "{{depName}} container image"
     }
   ]
 }
