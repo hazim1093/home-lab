@@ -41,9 +41,6 @@
       "fileMatch": [
         "/kubernetes/components/.+\\.yaml$"
       ],
-      "ignorePaths": [
-        "kubernetes/components/flux-system/**"
-      ],
       "matchStrings": [
         "version:\\s+\"(?<currentValue>.+?)\"\\s+# renovate: datasource=(?<datasource>.+?) depName=(?<depName>.+?)(?: versioning=(?<versioning>.+?))?\\s"
       ]
@@ -71,12 +68,6 @@
       "description": "Enable Docker updates in components (excluding flux-system)",
       "matchCategories": [
         "docker"
-      ],
-      "matchPaths": [
-        "kubernetes/components/**"
-      ],
-      "excludePaths": [
-        "kubernetes/components/flux-system/**"
       ],
       "enabled": true
     },
