@@ -3,6 +3,8 @@ kind: Certificate
 metadata:
   name: internal-wildcard-cert
   namespace: traefik
+  annotations:
+    cert-manager.io/issue-temporary-certificate: "true"
 spec:
   secretName: internal-wildcard-cert
   duration: 8760h # 1 year
@@ -14,3 +16,5 @@ spec:
     name: internal-ca-issuer
     kind: ClusterIssuer
     group: cert-manager.io
+  privateKey:
+    rotationPolicy: Always
