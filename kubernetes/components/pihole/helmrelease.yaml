@@ -50,12 +50,13 @@ spec:
       size: 1Gi
     serviceDns:
       type: LoadBalancer
+      loadBalancerIP: "192.168.0.201"
     serviceWeb:
       type: ClusterIP
     DNS1: "127.0.0.1#5335" # unbound
     DNS2: "127.0.0.1#5335"
-    ftl:
-      MAXDBDAYS: 3
+    extraEnvVars:
+      FTLCONF_database_DBInterval: "3.0"
     dnsmasq:
       customDnsEntries:
       - address=/homeassistant.lab/192.168.0.200
