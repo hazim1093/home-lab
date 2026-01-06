@@ -51,6 +51,8 @@ spec:
     serviceDns:
       type: LoadBalancer
       loadBalancerIP: "192.168.0.201"
+      annotations:
+        metallb.universe.tf/allow-shared-ip: "pihole-dns"
     serviceWeb:
       type: ClusterIP
     DNS1: "127.0.0.1#5335" # unbound
