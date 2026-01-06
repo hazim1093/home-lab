@@ -33,6 +33,28 @@ spec:
         mountPath: /config/configuration.yaml
         subPath: configuration.yaml
     initContainers:
+      - name: create-config-files
+        image: busybox:1.36
+        command:
+          - sh
+          - -c
+          - |
+            # Create automation files if they don't exist
+            for file in automations.yaml scripts.yaml scenes.yaml; do
+              if [ ! -f "/config/$file" ]; then
+                echo "Creating /config/$file"
+                if [ "$file" = "scripts.yaml" ]; then
+                  echo "{}" > "/config/$file"
+                else
+                  echo "[]" > "/config/$file"
+                fi
+              else
+                echo "/config/$file already exists"
+              fi
+            done
+        volumeMounts:
+          - name: home-assistant
+            mountPath: /config
       - name: install-custom-components
         image: busybox:1.36
         command:
