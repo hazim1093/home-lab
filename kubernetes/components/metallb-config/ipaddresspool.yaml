@@ -15,3 +15,7 @@ metadata:
 spec:
   ipAddressPools:
   - default-pool
+  interfaces:
+  - ens.*
+  - enp.*
+  - eth.*
