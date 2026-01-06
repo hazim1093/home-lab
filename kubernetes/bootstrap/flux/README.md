@@ -21,6 +21,7 @@ Set environment variables:
 export AWS_ACCESS_KEY_ID="<r2-access-key-id>"
 export AWS_SECRET_ACCESS_KEY="<r2-secret-access-key>"
 export TF_VAR_github_token="<github-pat>"
+export AWS_ENDPOINT_URL_S3="https://<account-id>.r2.cloudflarestorage.com"
 ```
 
 ### 2. Configure variables
