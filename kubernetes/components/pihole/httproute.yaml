@@ -28,3 +28,8 @@ spec:
     backendRefs:
     - name: pihole-web
       port: 80
+    sessionPersistence:
+      sessionName: pihole-session
+      cookieLifetimeSeconds: 3600
+      cookieConfig:
+        lifetimeType: Session
