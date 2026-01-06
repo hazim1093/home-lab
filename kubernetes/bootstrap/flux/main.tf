@@ -16,5 +16,4 @@ resource "flux_bootstrap_git" "this" {
   path               = var.flux_target_path
   embedded_manifests = true
   interval           = "1m"
-  version            = var.flux_version
 }

@@ -5,6 +5,5 @@ github_repository_url = "https://github.com/hazim1093/home-lab"
 kubeconfig_path    = "/Users/hazim/.kube/config"
 kubeconfig_context = "home-lab"
 
-cluster_name      = "home-lab"
-flux_target_path  = "kubernetes/components"
-flux_version      = "v2.7.3"
+cluster_name     = "home-lab"
+flux_target_path = "kubernetes/components/flux-system"

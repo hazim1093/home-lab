@@ -48,9 +48,3 @@ variable "flux_target_path" {
   type        = string
   default     = "cluster/k3s/flux-system"
 }
-
-variable "flux_version" {
-  description = "Flux version to install"
-  type        = string
-  default     = "latest"
-}
