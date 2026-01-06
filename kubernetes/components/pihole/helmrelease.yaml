@@ -55,6 +55,10 @@ spec:
         metallb.universe.tf/allow-shared-ip: "pihole-dns"
     serviceWeb:
       type: ClusterIP
+      sessionAffinity: ClientIP
+      sessionAffinityConfig:
+        clientIP:
+          timeoutSeconds: 10800
     DNS1: "127.0.0.1#5335" # unbound
     DNS2: "127.0.0.1#5335"
     extraEnvVars:
