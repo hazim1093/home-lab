@@ -68,6 +68,7 @@ spec:
       # Only add manual entries here for services not exposed via HTTPRoute
       customDnsEntries:
       - address=/rustdesk.${LOCAL_DOMAIN}/192.168.0.203
+      - address=/mqtt.${LOCAL_DOMAIN}/192.168.0.202
 
     # unbound
     extraVolumes:

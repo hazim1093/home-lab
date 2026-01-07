@@ -48,12 +48,14 @@ ansible_user: pi              # Your Pi username
 
 ### 2. Configure Variables
 
-Edit `ansible/group_vars/raspberry_pi.yml`:
+Edit `ansible/group_vars/raspberry_pi.yml` if needed:
 
 ```yaml
-mosquitto_host: 192.168.0.200  # Your Mosquitto LoadBalancer IP (check with: kubectl get svc -n mqtt)
+mosquitto_host: mqtt.lab       # DNS configured in PiHole (static IP: 192.168.0.202)
 timezone: Europe/Stockholm      # Your timezone
 ```
+
+**Note**: Mosquitto has a static MetalLB IP (192.168.0.202) and DNS entry (mqtt.lab) configured in PiHole.
 
 ### 3. Deploy with Ansible
 
@@ -91,17 +93,23 @@ The MQTT integration should automatically discover Zigbee2MQTT devices in Home A
 
 The Mosquitto MQTT broker runs in your k3s cluster and is deployed via Flux.
 
+**Network Configuration:**
+- Static IP: `192.168.0.202` (MetalLB LoadBalancer)
+- DNS: `mqtt.lab` (configured in PiHole)
+- MQTT Port: `1883`
+- WebSocket Port: `9001`
+
 ### Check Mosquitto Status
 
 ```bash
-# Get Mosquitto service IP
+# Get Mosquitto service IP (should show 192.168.0.202)
 kubectl get svc -n mqtt mosquitto
 
 # Check logs
 kubectl logs -n mqtt -l app=mosquitto
 
 # Test MQTT connection from Pi
-mosquitto_sub -h <mosquitto-ip> -t 'zigbee2mqtt/#' -v
+mosquitto_sub -h mqtt.lab -t 'zigbee2mqtt/#' -v
 ```
 
 ## Maintenance
@@ -157,8 +165,8 @@ Test MQTT connectivity:
 sudo apt install mosquitto-clients
 
 # Test connection
-mosquitto_pub -h <mosquitto-ip> -t test -m "hello"
-mosquitto_sub -h <mosquitto-ip> -t test
+mosquitto_pub -h mqtt.lab -t test -m "hello"
+mosquitto_sub -h mqtt.lab -t test
 ```
 
 ### Check Docker logs

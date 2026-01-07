@@ -1,5 +1,5 @@
 # Mosquitto MQTT broker configuration
-mosquitto_host: 192.168.0.200  # Replace with your Mosquitto LoadBalancer IP
+mosquitto_host: mqtt.lab  # DNS entry configured in PiHole (192.168.0.202)
 mosquitto_port: 1883
 
 # Zigbee2MQTT configuration
