@@ -13,3 +13,4 @@ resources:
 - rustdesk.yaml
 - renovate.yaml
 - gatus.yaml
+- mosquitto.yaml

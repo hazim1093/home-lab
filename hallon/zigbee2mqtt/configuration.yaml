@@ -1,0 +1,57 @@
+# Zigbee2MQTT configuration
+# Home Assistant integration available at: http://<your-home-assistant>:8123
+
+homeassistant: true
+
+# MQTT broker connection
+mqtt:
+  server: mqtt://{{ mosquitto_host }}:{{ mosquitto_port }}
+  base_topic: zigbee2mqtt
+  # Optional: MQTT authentication
+  # user: mqtt_user
+  # password: mqtt_password
+
+# Serial port configuration for ConBee
+serial:
+  port: {{ zigbee_device }}
+  adapter: deconz
+
+# Frontend configuration
+frontend:
+  port: 8080
+  host: 0.0.0.0
+
+# Advanced settings
+advanced:
+  log_level: info
+  pan_id: GENERATE
+  network_key: GENERATE
+  channel: 11
+
+  # Homeassistant integration
+  homeassistant_legacy_entity_attributes: false
+  legacy_api: false
+  legacy_availability_payload: false
+
+# Device options
+device_options:
+  retain: true
+
+# Optional: Allow new devices to join
+permit_join: true
+
+# Optional: Network map
+#map_options:
+#  graphviz:
+#    colors:
+#      fill:
+#        enddevice: '#fff8ce'
+#        coordinator: '#e04e5d'
+#        router: '#4ea3e0'
+#      font:
+#        coordinator: '#ffffff'
+#        router: '#ffffff'
+#        enddevice: '#000000'
+#      line:
+#        active: '#009900'
+#        inactive: '#994444'
