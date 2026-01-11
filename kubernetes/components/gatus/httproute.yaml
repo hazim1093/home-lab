@@ -19,7 +19,7 @@ spec:
     namespace: traefik
     sectionName: websecure
   hostnames:
-  - "gatus.lab"
+  - "gatus.${LOCAL_DOMAIN}"
   rules:
   - matches:
     - path:

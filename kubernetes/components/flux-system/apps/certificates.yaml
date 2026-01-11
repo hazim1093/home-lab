@@ -14,3 +14,11 @@ spec:
     name: flux-system
   wait: true
   timeout: 5m
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: domain-config
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age

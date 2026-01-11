@@ -15,3 +15,11 @@ spec:
     kind: HelmRelease
     name: gatus
     namespace: gatus
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: domain-config
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age

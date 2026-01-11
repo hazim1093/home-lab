@@ -15,36 +15,34 @@ spec:
         namespace: flux-system
       interval: 12h
   values:
-    # Use Pi-hole as DNS provider
-    provider: pihole
+    # Use Cloudflare as DNS provider for public DNS
+    provider:
+      name: cloudflare
 
-    # Pi-hole configuration
-    extraArgs:
-    - --pihole-server=http://pihole-web.pihole.svc.cluster.local
-    - --pihole-password=$(PIHOLE_PASSWORD)
-    - --pihole-tls-skip-verify
-
+    # Cloudflare configuration
     env:
-    - name: PIHOLE_PASSWORD
+    - name: CF_API_TOKEN
       valueFrom:
         secretKeyRef:
-          name: pihole-password
-          key: password
+          name: cloudflare-api-token
+          key: api-token
           optional: false
 
     # Watch HTTPRoutes
     sources:
     - gateway-httproute
 
-    # Domain filter - only manage .lab domains
+    # Domain filter - manage ${LOCAL_DOMAIN} subdomain
     domainFilters:
-    - lab
+    - ${LOCAL_DOMAIN}
 
-    # Registry: noop (Pi-hole doesn't support TXT records)
-    registry: noop
+    # Use TXT records for ownership tracking
+    registry: txt
+    txtOwnerId: home-lab
+    txtPrefix: externaldns-
 
-    # Policy: upsert-only (don't delete manual entries)
-    policy: upsert-only
+    # Policy: sync (create and delete records)
+    policy: sync
 
     # Logging
-    logLevel: debug
+    logLevel: info

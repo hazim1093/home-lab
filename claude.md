@@ -8,6 +8,7 @@
 - [Component Architecture](#component-architecture)
 - [How Components Are Linked](#how-components-are-linked)
 - [Adding a New Component/App](#adding-a-new-componentapp)
+- [Secrets Management](#secrets-management)
 - [Service Exposure Patterns](#service-exposure-patterns)
 - [DNS and Networking](#dns-and-networking)
 - [Certificate Management](#certificate-management)
@@ -24,8 +25,9 @@ This is a **GitOps-based Kubernetes home lab** using:
 - **MetalLB** - Bare metal load balancer
 - **PiHole + Unbound** - DNS filtering and recursive resolution
 - **cert-manager** - TLS certificate management
+- **SOPS** - Secrets encryption with age
 
-**Key Principle**: Everything is declarative. All infrastructure and applications are defined in YAML and automatically deployed by Flux.
+**Key Principle**: Everything is declarative. All infrastructure and applications are defined in YAML and automatically deployed by Flux. Secrets are encrypted with SOPS before being committed to Git.
 
 ---
 
@@ -369,6 +371,50 @@ flux get helmreleases -n my-new-app
 # Check pods
 kubectl get pods -n my-new-app
 ```
+
+---
+
+## Secrets Management
+
+All secrets are encrypted using **SOPS** (Secrets OPerationS) with **age** encryption before being committed to Git. Flux automatically decrypts them when deploying to the cluster.
+
+### Encryption Setup
+
+```bash
+# Restore age key from backup to .age/key.txt
+# Deploy key to cluster for Flux
+cat .age/key.txt | kubectl create secret generic sops-age \
+  --namespace=flux-system --from-file=age.agekey=/dev/stdin
+```
+
+### Working with Secrets
+
+```bash
+# Set key location
+export SOPS_AGE_KEY_FILE=.age/key.txt
+
+# Encrypt a secret file
+sops --encrypt --in-place kubernetes/components/my-app/secret.yaml
+
+# Edit encrypted secret (auto decrypt/encrypt)
+sops kubernetes/components/my-app/secret.yaml
+```
+
+### Flux Decryption
+
+Add to any Kustomization that deploys encrypted secrets:
+
+```yaml
+spec:
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+```
+
+**Age public key**: `age1s84t0ws8cpp8ujf8mny373gg63g9d52fezrdwe24jdfe4d309pwqvawpcu`
+
+**Configuration**: `.sops.yaml` encrypts `data` and `stringData` fields only
 
 ---
 

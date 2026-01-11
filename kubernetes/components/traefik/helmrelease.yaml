@@ -37,7 +37,7 @@ spec:
           namespacePolicy:
             from: All
           certificateRefs:
-            - name: internal-wildcard-cert
+            - name: local-wildcard-cert
               namespace: traefik
           mode: Terminate
     ports:
