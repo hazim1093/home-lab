@@ -15,11 +15,8 @@ spec:
         namespace: flux-system
       interval: 12h
   values:
-    # Use Cloudflare as DNS provider for public DNS
     provider:
       name: cloudflare
-
-    # Cloudflare configuration
     env:
     - name: CF_API_TOKEN
       valueFrom:
@@ -27,22 +24,14 @@ spec:
           name: cloudflare-api-token
           key: api-token
           optional: false
-
-    # Watch HTTPRoutes
     sources:
     - gateway-httproute
-
-    # Domain filter - manage ${LOCAL_DOMAIN} subdomain
     domainFilters:
-    - ${LOCAL_DOMAIN}
-
-    # Use TXT records for ownership tracking
+    - ${BASE_DOMAIN}
     registry: txt
     txtOwnerId: home-lab
     txtPrefix: externaldns-
 
     # Policy: sync (create and delete records)
     policy: sync
-
-    # Logging
     logLevel: info
