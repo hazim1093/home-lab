@@ -4,6 +4,7 @@ resources:
 - flux-system-secrets.yaml
 - metallb.yaml
 - metallb-config.yaml
+- external-dns.yaml
 - cert-manager.yaml
 - certificates.yaml
 - traefik.yaml
@@ -12,4 +13,3 @@ resources:
 - rustdesk.yaml
 - renovate.yaml
 - gatus.yaml
-# - external-dns.yaml
