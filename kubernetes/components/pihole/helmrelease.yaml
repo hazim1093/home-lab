@@ -64,11 +64,10 @@ spec:
     extraEnvVars:
       FTLCONF_database_DBInterval: "3.0"
     dnsmasq:
+      # DNS entries for ${LOCAL_DOMAIN} are managed automatically by external-dns
+      # Only add manual entries here for services not exposed via HTTPRoute
       customDnsEntries:
-      - address=/homeassistant.lab/192.168.0.200
-      - address=/pihole.lab/192.168.0.200
-      - address=/rustdesk.lab/192.168.0.203
-      - address=/gatus.lab/192.168.0.200
+      - address=/rustdesk.${LOCAL_DOMAIN}/192.168.0.203
 
     # unbound
     extraVolumes:

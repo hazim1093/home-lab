@@ -5,4 +5,4 @@ metadata:
   namespace: traefik
 spec:
   defaultCertificate:
-    secretName: internal-wildcard-cert
+    secretName: local-wildcard-cert

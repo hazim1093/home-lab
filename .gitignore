@@ -1,3 +1,8 @@
 .terraform*
 todo
-secrets/
+
+# SOPS age encryption keys (NEVER commit these!)
+.age/
+age.agekey
+*.agekey
+key.txt
