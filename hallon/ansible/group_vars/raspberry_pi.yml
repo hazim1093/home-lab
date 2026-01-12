@@ -1,0 +1,10 @@
+# Mosquitto MQTT broker configuration
+mosquitto_host: mqtt.lab  # DNS entry configured in PiHole (192.168.0.202)
+mosquitto_port: 1883
+
+# Zigbee2MQTT configuration
+zigbee2mqtt_version: latest
+zigbee_device: /dev/ttyACM0  # ConBee USB device
+
+# Network configuration
+timezone: Europe/Stockholm  # Change to your timezone

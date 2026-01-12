@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mosquitto-config
+  namespace: mqtt
+data:
+  mosquitto.conf: |
+    # Mosquitto configuration
+    persistence true
+    persistence_location /mosquitto/data/
+    log_dest file /mosquitto/log/mosquitto.log
+    log_dest stdout
+
+    # Default listener
+    listener 1883
+    protocol mqtt
+
+    # WebSocket listener
+    listener 9001
+    protocol websockets
+
+    # Allow anonymous connections (configure authentication later if needed)
+    allow_anonymous true
+
+    # Logging
+    log_type error
+    log_type warning
+    log_type notice
+    log_type information
+
+    # Connection messages
+    connection_messages true

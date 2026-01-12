@@ -23,11 +23,14 @@ This is a **GitOps-based Kubernetes home lab** using:
 - **Flux CD** - GitOps continuous delivery
 - **Traefik** - Kubernetes Gateway API ingress controller
 - **MetalLB** - Bare metal load balancer
+- **Mosquitto** - MQTT broker for IoT devices
 - **PiHole + Unbound** - DNS filtering and recursive resolution
 - **cert-manager** - TLS certificate management
 - **SOPS** - Secrets encryption with age
 
-**Key Principle**: Everything is declarative. All infrastructure and applications are defined in YAML and automatically deployed by Flux. Secrets are encrypted with SOPS before being committed to Git.
+**Hybrid Architecture**: K3s cluster handles core services, with Raspberry Pi running hardware-dependent services (Zigbee2MQTT) via Docker, managed through Ansible.
+
+**Key Principle**: Everything is declarative. All infrastructure and applications are defined in YAML and automatically deployed by Flux or Ansible. Secrets are encrypted with SOPS before being committed to Git.
 
 ---
 
@@ -51,12 +54,21 @@ home-lab/
 │       ├── certificates/            # Root CA + wildcard cert
 │       ├── metallb/                 # Load balancer
 │       ├── metallb-config/          # IP pool + L2 advertisement
+│       ├── mosquitto/               # MQTT broker
 │       ├── pihole/                  # DNS filtering
 │       ├── home-assistant/          # Home automation
 │       ├── rustdesk/                # Remote desktop
 │       ├── gatus/                   # Health monitoring
 │       ├── external-dns/            # Automatic DNS management
 │       └── renovate/                # Dependency updates
+├── hallon/                          # Raspberry Pi management
+│   ├── ansible/                     # Ansible automation
+│   │   ├── playbook.yml             # Pi setup playbook
+│   │   ├── inventory.yml            # Pi host configuration
+│   │   └── group_vars/              # Configuration variables
+│   ├── docker-compose.yml           # Zigbee2MQTT container
+│   ├── zigbee2mqtt/                 # Zigbee2MQTT configuration
+│   └── README.md                    # Pi setup documentation
 ├── cluster/
 │   └── k3s/config.yaml              # K3s server configuration
 ├── .github/workflows/
@@ -504,6 +516,7 @@ spec:
 **IP Assignments**:
 - `192.168.0.200` - Traefik (ingress)
 - `192.168.0.201` - PiHole DNS
+- `192.168.0.202` - Mosquitto MQTT
 - `192.168.0.203` - RustDesk
 - `192.168.0.204-210` - Available
 
@@ -523,6 +536,132 @@ spec:
 ```
 
 **Access**: Only via `<service-name>.<namespace>.svc.cluster.local:<port>`
+
+---
+
+## Raspberry Pi Setup (Hallon)
+
+### Overview
+
+The `hallon/` directory manages Raspberry Pi 3B+ running hardware-dependent services that cannot run in k8s (USB devices, Zigbee radios, etc.).
+
+**Architecture**:
+```
+Raspberry Pi (hallon)          K3s Cluster
+┌──────────────────┐          ┌─────────────────┐
+│ Zigbee2MQTT      │          │ Mosquitto MQTT  │
+│ (Docker)         │──MQTT───>│ (192.168.0.202) │
+│                  │          │                 │
+│ ConBee USB ──────┤          │ Home Assistant  │
+│ /dev/ttyACM0     │          │                 │
+└──────────────────┘          └─────────────────┘
+```
+
+### Why Separate Pi?
+
+- **USB device access**: ConBee Zigbee stick requires direct USB access
+- **Resource efficiency**: Pi 3B+ (1GB RAM) can't run k3s efficiently
+- **Simplicity**: Direct Docker deployment, no k8s overhead
+- **Reliability**: Hardware failures isolated from cluster
+
+### Directory Structure
+
+```
+hallon/
+├── ansible/
+│   ├── playbook.yml              # Automated Pi setup
+│   ├── inventory.yml             # Pi host configuration
+│   └── group_vars/
+│       └── raspberry_pi.yml      # Configuration variables
+├── docker-compose.yml            # Zigbee2MQTT container
+├── zigbee2mqtt/
+│   └── configuration.yaml        # Zigbee2MQTT config template
+└── README.md                     # Full setup documentation
+```
+
+### Deployment Process
+
+**One-time setup**:
+1. Edit `ansible/inventory.yml` with Pi's IP address
+2. Edit `ansible/group_vars/raspberry_pi.yml` if needed (timezone, etc.)
+3. Run: `ansible-playbook -i ansible/inventory.yml ansible/playbook.yml`
+
+**What Ansible does**:
+- Installs Docker and Docker Compose
+- Creates `/opt/zigbee2mqtt/` directory structure
+- Deploys Zigbee2MQTT container configuration
+- Creates systemd service for auto-start on boot
+- Configures timezone and system settings
+
+**Result**:
+- Zigbee2MQTT running on Pi, connecting to `mqtt.lab` (192.168.0.202)
+- Web UI accessible at `http://<pi-ip>:8080`
+- Devices automatically discovered by Home Assistant via MQTT
+
+### Services on Pi
+
+**Currently Running**:
+- **Zigbee2MQTT**: Bridges Zigbee devices (via ConBee) to MQTT broker
+
+**Good Candidates for Pi**:
+- Bluetooth Proxy for Home Assistant (very lightweight)
+- ESPHome Dashboard (if using ESP32/ESP8266 devices)
+- Network UPS Tools (if Pi on UPS)
+
+**Avoid on Pi**:
+- Heavy services (databases, media servers)
+- Anything better suited for k8s cluster
+- Services with high CPU usage
+
+### Configuration Management
+
+**Infrastructure as Code**:
+- Pi configuration is managed via Ansible (declarative)
+- Docker Compose defines containers (version-controlled)
+- Changes pushed to Git, then re-run playbook to update
+
+**Key Configuration Files**:
+- `ansible/group_vars/raspberry_pi.yml`: MQTT host, timezone, device paths
+- `zigbee2mqtt/configuration.yaml`: Zigbee network, MQTT connection, frontend
+
+### Integration with K3s
+
+**MQTT Broker (Mosquitto)**:
+- Runs in k8s cluster (`mqtt` namespace)
+- Static IP: 192.168.0.202 (MetalLB LoadBalancer)
+- DNS: mqtt.lab (configured in PiHole)
+- Pi connects to cluster via `mqtt.lab:1883`
+
+**Home Assistant**:
+- Runs in k8s cluster
+- Auto-discovers Zigbee devices via MQTT integration
+- No direct Pi access required
+
+### Troubleshooting
+
+**Check Pi services**:
+```bash
+ssh pi@<pi-ip>
+docker ps                           # Check running containers
+docker logs zigbee2mqtt             # View logs
+sudo systemctl status zigbee2mqtt  # Check systemd service
+```
+
+**Test MQTT connection**:
+```bash
+# From Pi
+mosquitto_sub -h mqtt.lab -t 'zigbee2mqtt/#' -v
+```
+
+**Re-deploy configuration**:
+```bash
+# From local machine
+ansible-playbook -i hallon/ansible/inventory.yml hallon/ansible/playbook.yml
+```
+
+### Documentation
+
+Full setup instructions and troubleshooting: `hallon/README.md`
 
 ---
 
@@ -558,6 +697,7 @@ customDnsEntries:
   - address=/pihole.lab/192.168.0.200
   - address=/rustdesk.lab/192.168.0.203
   - address=/gatus.lab/192.168.0.200
+  - address=/mqtt.lab/192.168.0.202
 ```
 
 **To Add a New DNS Entry**:
@@ -975,6 +1115,7 @@ kubectl get secret internal-wildcard-cert -n traefik -o yaml
 ### IP Allocations
 - **Traefik**: `192.168.0.200`
 - **PiHole DNS**: `192.168.0.201`
+- **Mosquitto MQTT**: `192.168.0.202`
 - **RustDesk**: `192.168.0.203`
 - **Available**: `192.168.0.204-210`
 
@@ -1001,4 +1142,4 @@ kubectl get secret internal-wildcard-cert -n traefik -o yaml
 
 ---
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-01-07
