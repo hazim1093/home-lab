@@ -67,8 +67,8 @@ spec:
       # DNS entries for ${LOCAL_DOMAIN} are managed automatically by external-dns
       # Only add manual entries here for services not exposed via HTTPRoute
       customDnsEntries:
-      - address=/rustdesk.${LOCAL_DOMAIN}/192.168.0.203
-      - address=/mqtt.${LOCAL_DOMAIN}/192.168.0.202
+      - address=/rustdesk.lab/192.168.0.203
+      - address=/mqtt.lab/192.168.0.202
 
     # unbound
     extraVolumes:
