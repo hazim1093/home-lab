@@ -44,3 +44,6 @@ data:
       private-address: 10.0.0.0/8
       private-address: fd00::/8
       private-address: fe80::/10
+
+      # Allow private IPs for trusted domains (applies to all subdomains)
+      private-domain: "${BASE_DOMAIN}"
