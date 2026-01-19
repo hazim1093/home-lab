@@ -1,0 +1,42 @@
+---
+# Tasks to control Raspberry Pi LEDs
+# Works with DietPi and standard Raspberry Pi OS
+
+- name: Check boot config location
+  stat:
+    path: /boot/firmware/config.txt
+  register: boot_firmware_config
+
+- name: Disable red power LED in boot config (firmware location)
+  lineinfile:
+    path: /boot/firmware/config.txt
+    line: "{{ item }}"
+    state: present
+    create: false
+  loop:
+    - "# Disable red power LED"
+    - "dtparam=pwr_led_trigger=none"
+    - "dtparam=pwr_led_activelow=off"
+  when: boot_firmware_config.stat.exists
+
+- name: Disable red power LED in boot config (legacy location)
+  lineinfile:
+    path: /boot/config.txt
+    line: "{{ item }}"
+    state: present
+    create: false
+  loop:
+    - "# Disable red power LED"
+    - "dtparam=pwr_led_trigger=none"
+    - "dtparam=pwr_led_activelow=off"
+  when: not boot_firmware_config.stat.exists
+
+- name: Disable red LED at runtime (immediate effect)
+  shell: |
+    if [ -d /sys/class/leds/PWR ]; then
+      echo 0 > /sys/class/leds/PWR/brightness
+    elif [ -d /sys/class/leds/led1 ]; then
+      echo 0 > /sys/class/leds/led1/brightness
+    fi
+  ignore_errors: true
+  changed_when: false
