@@ -52,6 +52,9 @@
       community.general.timezone:
         name: "{{ timezone }}"
 
+    - name: Configure LED control
+      include_tasks: tasks/led_control.yml
+
     - name: Create zigbee2mqtt directory
       file:
         path: /opt/zigbee2mqtt

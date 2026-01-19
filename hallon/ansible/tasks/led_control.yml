@@ -1,0 +1,17 @@
+---
+# Tasks to control Raspberry Pi LEDs on DietPi
+
+- name: Disable red power LED in boot config
+  lineinfile:
+    path: /boot/config.txt
+    line: "{{ item }}"
+    state: present
+  loop:
+    - "# Disable red power LED"
+    - "dtparam=pwr_led_trigger=none"
+    - "dtparam=pwr_led_activelow=off"
+
+- name: Disable red LED at runtime (immediate effect)
+  shell: echo 0 > /sys/class/leds/PWR/brightness
+  ignore_errors: true
+  changed_when: false
