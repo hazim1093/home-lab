@@ -7,30 +7,22 @@
     "before 6am on monday"
   ],
   "terraform": {
-    "fileMatch": [
-      "kubernetes/bootstrap/flux/.+\\.tf$"
-    ]
+    "fileMatch": ["/^kubernetes\\/bootstrap\\/flux\\/.+\\.tf$/"]
   },
   "kubernetes": {
-    "fileMatch": [
-      "kubernetes/components/.+\\.yaml$"
-    ],
+    "fileMatch": ["/^kubernetes\\/components\\/.+\\.yaml$/"],
     "ignorePaths": [
       "kubernetes/components/flux-system/**"
     ]
   },
   "flux": {
-    "fileMatch": [
-      "kubernetes/components/.+\\.yaml$"
-    ],
+    "fileMatch": ["/^kubernetes\\/components\\/.+\\.yaml$/"],
     "ignorePaths": [
       "kubernetes/components/flux-system/**"
     ]
   },
   "helm-values": {
-    "fileMatch": [
-      "kubernetes/components/.+\\.yaml$"
-    ],
+    "fileMatch": ["/^kubernetes\\/components\\/.+\\.yaml$/"],
     "ignorePaths": [
       "kubernetes/components/flux-system/**"
     ]
@@ -38,9 +30,7 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "kubernetes/components/.+\\.yaml$"
-      ],
+      "fileMatch": ["/^kubernetes\\/components\\/.+\\.yaml$/"],
       "matchStrings": [
         "version:\\s+\"(?<currentValue>.+?)\"\\s+# renovate: datasource=(?<datasource>.+?) depName=(?<depName>.+?)(?: versioning=(?<versioning>.+?))?\\s"
       ]
