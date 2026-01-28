@@ -7,29 +7,29 @@
     "before 6am on monday"
   ],
   "terraform": {
-    "managerFilePatterns": [
-      "//kubernetes/bootstrap/flux/.+\\.tf$/"
+    "fileMatch": [
+      "kubernetes/bootstrap/flux/.+\\.tf$"
     ]
   },
   "kubernetes": {
-    "managerFilePatterns": [
-      "//kubernetes/components/.+\\.yaml$/"
+    "fileMatch": [
+      "kubernetes/components/.+\\.yaml$"
     ],
     "ignorePaths": [
       "kubernetes/components/flux-system/**"
     ]
   },
   "flux": {
-    "managerFilePatterns": [
-      "//kubernetes/components/.+\\.yaml$/"
+    "fileMatch": [
+      "kubernetes/components/.+\\.yaml$"
     ],
     "ignorePaths": [
       "kubernetes/components/flux-system/**"
     ]
   },
   "helm-values": {
-    "managerFilePatterns": [
-      "//kubernetes/components/.+\\.yaml$/"
+    "fileMatch": [
+      "kubernetes/components/.+\\.yaml$"
     ],
     "ignorePaths": [
       "kubernetes/components/flux-system/**"
@@ -38,8 +38,8 @@
   "customManagers": [
     {
       "customType": "regex",
-      "managerFilePatterns": [
-        "//kubernetes/components/.+\\.yaml$/"
+      "fileMatch": [
+        "kubernetes/components/.+\\.yaml$"
       ],
       "matchStrings": [
         "version:\\s+\"(?<currentValue>.+?)\"\\s+# renovate: datasource=(?<datasource>.+?) depName=(?<depName>.+?)(?: versioning=(?<versioning>.+?))?\\s"
