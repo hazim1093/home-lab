@@ -1,0 +1,50 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: atlantis
+  namespace: atlantis
+spec:
+  interval: 12h
+  upgrade:
+    remediation:
+      retries: 5
+  chart:
+    spec:
+      chart: atlantis
+      version: "5.27.0" # renovate: datasource=helm depName=atlantis registryUrl=https://runatlantis.github.io/helm-charts
+      sourceRef:
+        kind: HelmRepository
+        name: runatlantis
+        namespace: flux-system
+      interval: 12h
+  values:
+    # Repository allowlist - restrict which repos Atlantis can operate on
+    # TODO: Update this to match your GitHub org/user
+    orgAllowlist: "github.com/your-org/*"
+
+    # GitHub integration
+    # TODO: Configure GitHub credentials via a Secret or use githubApp
+    # github:
+    #   user: ""
+    #   token: ""
+    #   secret: ""
+
+    service:
+      type: ClusterIP
+      port: 80
+      targetPort: 4141
+
+    ingress:
+      enabled: false
+
+    # Persistent storage for Terraform plan files
+    volumeClaim:
+      enabled: true
+      dataStorage: 5Gi
+
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
