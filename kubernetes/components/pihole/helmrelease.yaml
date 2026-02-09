@@ -77,7 +77,7 @@ spec:
           name: unbound-config
     extraContainers:
     - name: unbound
-      image: mvance/unbound:1.21.0
+      image: mvance/unbound:1.22.0
       ports:
       - containerPort: 5335
         protocol: UDP
