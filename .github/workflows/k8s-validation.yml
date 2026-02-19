@@ -1,0 +1,79 @@
+name: Kubernetes Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'kubernetes/components/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'kubernetes/components/**'
+
+env:
+  KUSTOMIZE_VERSION: "5.4.3"
+  KUBECONFORM_VERSION: "0.6.7"
+  KUBERNETES_VERSION: "1.32.0"
+
+jobs:
+  validate:
+    name: Kustomize & Kubeconform
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup kustomize
+        env:
+          KUSTOMIZE_VERSION: ${{ env.KUSTOMIZE_VERSION }}
+        run: |
+          curl -fsSL \
+            "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
+            -o kustomize.tar.gz
+          tar -xzf kustomize.tar.gz
+          sudo mv kustomize /usr/local/bin/kustomize
+          kustomize version
+
+      - name: Setup kubeconform
+        env:
+          KUBECONFORM_VERSION: ${{ env.KUBECONFORM_VERSION }}
+        run: |
+          curl -fsSL \
+            "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            -o kubeconform.tar.gz
+          tar -xzf kubeconform.tar.gz
+          sudo mv kubeconform /usr/local/bin/kubeconform
+          kubeconform -v
+
+      - name: Kustomize build validation
+        run: |
+          set -euo pipefail
+          while read -r dir; do
+            echo "::group::Building ${dir}"
+            kustomize build "${dir}" > /dev/null
+            echo "Build OK: ${dir}"
+            echo "::endgroup::"
+          done < <(find kubernetes/components -maxdepth 1 -mindepth 1 -type d | sort)
+
+      - name: Kubeconform schema validation
+        env:
+          KUBERNETES_VERSION: ${{ env.KUBERNETES_VERSION }}
+        run: |
+          set -euo pipefail
+          # CRDs catalog provides schemas for Flux and other common CRDs
+          FLUX_SCHEMA='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+
+          while read -r dir; do
+            echo "::group::Validating ${dir}"
+            kustomize build "${dir}" | kubeconform \
+              -kubernetes-version "${KUBERNETES_VERSION}" \
+              -schema-location default \
+              -schema-location "${FLUX_SCHEMA}" \
+              -ignore-missing-schemas \
+              -summary
+            echo "::endgroup::"
+          done < <(find kubernetes/components -maxdepth 1 -mindepth 1 -type d | sort)
