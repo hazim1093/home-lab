@@ -13,7 +13,7 @@ spec:
           restartPolicy: Never
           containers:
             - name: renovate
-              image: renovate/renovate:42
+              image: renovate/renovate:43
               env:
                 - name: RENOVATE_PLATFORM
                   value: "github"
