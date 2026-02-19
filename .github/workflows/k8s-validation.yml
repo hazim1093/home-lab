@@ -18,14 +18,49 @@ env:
   KUBERNETES_VERSION: "1.32.0"
 
 jobs:
+  detect-changes:
+    name: Detect changed components
+    runs-on: ubuntu-latest
+    outputs:
+      components: ${{ steps.changed.outputs.components }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed component directories
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED=$(git diff --name-only \
+              "${{ github.event.pull_request.base.sha }}" \
+              "${{ github.event.pull_request.head.sha }}")
+          else
+            CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          fi
+
+          COMPONENTS=$(echo "${CHANGED}" \
+            | grep '^kubernetes/components/' \
+            | sed 's|kubernetes/components/\([^/]*\)/.*|\1|' \
+            | sort -u \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+          echo "components=${COMPONENTS}" >> "${GITHUB_OUTPUT}"
+          echo "Changed components: ${COMPONENTS}"
+
   validate:
-    name: Kustomize & Kubeconform
+    name: "${{ matrix.component }}"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.components != '[]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      matrix:
+        component: ${{ fromJson(needs.detect-changes.outputs.components) }}
+      fail-fast: false
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup kustomize
         env:
@@ -36,7 +71,6 @@ jobs:
             -o kustomize.tar.gz
           tar -xzf kustomize.tar.gz
           sudo mv kustomize /usr/local/bin/kustomize
-          kustomize version
 
       - name: Setup kubeconform
         env:
@@ -47,33 +81,19 @@ jobs:
             -o kubeconform.tar.gz
           tar -xzf kubeconform.tar.gz
           sudo mv kubeconform /usr/local/bin/kubeconform
-          kubeconform -v
 
-      - name: Kustomize build validation
+      - name: Kustomize build
         run: |
-          set -euo pipefail
-          while read -r dir; do
-            echo "::group::Building ${dir}"
-            kustomize build "${dir}" > /dev/null
-            echo "Build OK: ${dir}"
-            echo "::endgroup::"
-          done < <(find kubernetes/components -maxdepth 1 -mindepth 1 -type d | sort)
+          kustomize build "kubernetes/components/${{ matrix.component }}" > /tmp/built.yaml
 
-      - name: Kubeconform schema validation
+      - name: Kubeconform
         env:
           KUBERNETES_VERSION: ${{ env.KUBERNETES_VERSION }}
         run: |
-          set -euo pipefail
-          # CRDs catalog provides schemas for Flux and other common CRDs
-          FLUX_SCHEMA='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
-
-          while read -r dir; do
-            echo "::group::Validating ${dir}"
-            kustomize build "${dir}" | kubeconform \
-              -kubernetes-version "${KUBERNETES_VERSION}" \
-              -schema-location default \
-              -schema-location "${FLUX_SCHEMA}" \
-              -ignore-missing-schemas \
-              -summary
-            echo "::endgroup::"
-          done < <(find kubernetes/components -maxdepth 1 -mindepth 1 -type d | sort)
+          kubeconform \
+            -kubernetes-version "${KUBERNETES_VERSION}" \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            -ignore-missing-schemas \
+            -summary \
+            /tmp/built.yaml
