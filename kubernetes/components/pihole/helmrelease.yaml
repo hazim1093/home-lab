@@ -62,7 +62,11 @@ spec:
     DNS1: "127.0.0.1#5335" # unbound
     DNS2: "127.0.0.1#5335"
     extraEnvVars:
-      FTLCONF_database_DBInterval: "3.0"
+      FTLCONF_database_DBInterval: "60.0"  # Increase from 3 to 60 minutes (reduce DB writes)
+      FTLCONF_database_DBImport: "yes"  # Enable database import
+      FTLCONF_database_DBExport: "yes"  # Enable database export
+      FTLCONF_rate_limit_count: "2000"  # Increase from 1000 to 2000 queries/60s
+      FTLCONF_rate_limit_interval: "60"  # Time window in seconds
     dnsmasq:
       # DNS entries for ${LOCAL_DOMAIN} are managed automatically by external-dns
       # Only add manual entries here for services not exposed via HTTPRoute
