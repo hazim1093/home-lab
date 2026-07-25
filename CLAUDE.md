@@ -252,7 +252,53 @@ Flux System Kustomization (flux-system/kustomization.yaml)
 
 ---
 
-## Adding a New Component/App
+## Two Patterns for Apps
+
+There are two ways to deploy applications, depending on whether they use Helm charts or raw manifests:
+
+### Pattern A: `kubernetes/apps/` — Raw Manifests (Simple Apps)
+
+**Use this for**: Custom apps, non-Helm deployments, apps you own (e.g., screener).
+
+A single Flux Kustomization (`apps` in `flux-system`) watches the entire `kubernetes/apps/` directory. It has SOPS decryption and `${LOCAL_DOMAIN}` substitution built in — every app inside inherits these automatically.
+
+**To add a new app:**
+
+1. Create `kubernetes/apps/my-app/` with manifests:
+   ```
+   kubernetes/apps/my-app/
+   ├── kustomization.yaml   # lists all files below
+   ├── namespace.yaml
+   ├── secret.yaml          # SOPS-encrypted
+   └── httproute.yaml       # can use ${LOCAL_DOMAIN}
+   ```
+
+2. Add the directory to `kubernetes/apps/kustomization.yaml`:
+   ```yaml
+   resources:
+   - existing-app
+   - my-app
+   ```
+
+That's it. No new Flux Kustomization needed. SOPS decryption and substitutions work automatically.
+
+**Encrypting secrets:**
+```bash
+export SOPS_AGE_KEY_FILE=.age/key.txt
+sops --encrypt --in-place kubernetes/apps/my-app/secret.yaml
+```
+
+The `apps` Flux Kustomization depends on `traefik`, so HTTPRoutes work out of the box.
+
+---
+
+### Pattern B: `kubernetes/components/` — Helm Chart Apps
+
+**Use this for**: Infrastructure and Helm-based deployments (traefik, cert-manager, pihole, etc.).
+
+Each component gets its own Flux Kustomization in `flux-system/apps/`, allowing per-app dependency ordering and configuration.
+
+## Adding a New Component/App (Pattern B)
 
 ### Step-by-Step Guide
 
@@ -1102,8 +1148,10 @@ kubectl get secret internal-wildcard-cert -n traefik -o yaml
 - **Flux core**: `kubernetes/components/flux-system/`
 - **Helm repos**: `kubernetes/components/flux-system/repos/`
 - **App orchestration**: `kubernetes/components/flux-system/apps/`
-- **Components**: `kubernetes/components/<app-name>/`
+- **Components (Helm-based)**: `kubernetes/components/<app-name>/`
+- **Apps (raw manifests)**: `kubernetes/apps/<app-name>/`
 - **Certificates**: `kubernetes/components/certificates/`
+- **SOPS age key**: `.age/key.txt`
 
 ### Naming Conventions
 - **Namespaces**: Same as component name (e.g., `my-app`)
