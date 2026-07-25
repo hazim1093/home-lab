@@ -5,4 +5,4 @@ metadata:
   namespace: screener
 data:
   LLM_PROVIDER: "openrouter"
-  LLM_MODEL: "inclusionai/ling-3.0-flash:free" # Available openrouter/free — lazy option, routes to whatever free model is available (fine for low-stakes tasks)
+  LLM_MODEL: "openrouter/inclusionai/ling-3.0-flash:free" # Available openrouter/free — lazy option, routes to whatever free model is available (fine for low-stakes tasks)
