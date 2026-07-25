@@ -9,3 +9,4 @@ resources:
 - pschichtel.yaml
 - twin.yaml
 - external-dns.yaml
+- stakater.yaml
