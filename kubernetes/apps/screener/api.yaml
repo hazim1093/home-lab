@@ -24,34 +24,11 @@ spec:
         ports:
         - containerPort: 8000
           name: http
-        env:
-        - name: TAVILY_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: screener-secrets
-              key: TAVILY_API_KEY
-        - name: LLM_PROVIDER
-          valueFrom:
-            configMapKeyRef:
-              name: screener-config
-              key: LLM_PROVIDER
-        - name: LLM_MODEL
-          valueFrom:
-            configMapKeyRef:
-              name: screener-config
-              key: LLM_MODEL
-        - name: ANTHROPIC_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: screener-secrets
-              key: ANTHROPIC_API_KEY
-              optional: true
-        - name: OPENAI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: screener-secrets
-              key: OPENAI_API_KEY
-              optional: true
+        envFrom:
+        - secretRef:
+            name: screener-secrets
+        - configMapRef:
+            name: screener-config
         resources:
           requests:
             memory: 128Mi
