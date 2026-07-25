@@ -1,5 +1,3 @@
-# NEXT_PUBLIC_API_URL is baked at image build time — not a runtime env var.
-# Build the image with: docker build --build-arg NEXT_PUBLIC_API_URL=https://screener-api.${LOCAL_DOMAIN}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,6 +21,9 @@ spec:
       - name: frontend
         image: ghcr.io/hazim1093/screener-frontend:latest
         imagePullPolicy: Always
+        env:
+        - name: API_URL
+          value: "http://screener-api:8000"
         ports:
         - containerPort: 3000
           name: http
