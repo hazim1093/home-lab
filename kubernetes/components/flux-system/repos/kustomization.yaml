@@ -10,3 +10,4 @@ resources:
 - twin.yaml
 - external-dns.yaml
 - stakater.yaml
+- grafana.yaml

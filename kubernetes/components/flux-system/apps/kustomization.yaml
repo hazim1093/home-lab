@@ -15,4 +15,5 @@ resources:
 - gatus.yaml
 - mosquitto.yaml
 - reloader.yaml
+- grafana-alloy.yaml
 - apps-dir.yaml
