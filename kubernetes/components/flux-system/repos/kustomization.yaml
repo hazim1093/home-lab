@@ -1,6 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+- arc.yaml
 - jetstack.yaml
 - home-assistant.yaml
 - mojo2600.yaml
@@ -11,3 +12,4 @@ resources:
 - external-dns.yaml
 - stakater.yaml
 - grafana.yaml
+- kedacore.yaml
