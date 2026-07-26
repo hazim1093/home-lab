@@ -1,11 +1,9 @@
 # Ships cluster metrics + pod logs to a Grafana Cloud free-tier stack.
 #
 # Before this reconciles successfully:
-#   1. Replace GRAFANA_CLOUD_PROMETHEUS_URL / GRAFANA_CLOUD_PROMETHEUS_USERNAME
-#      and GRAFANA_CLOUD_LOKI_URL / GRAFANA_CLOUD_LOKI_USERNAME below with the
-#      values from your Grafana Cloud stack details page
-#      (Grafana Cloud portal -> your stack -> "Send Metrics"/"Send Logs").
-#      These are not secret (they're just endpoint/instance IDs).
+#   1. Fill in grafana-cloud-config.yaml with the URLs and usernames from your
+#      Grafana Cloud stack details page (Send Metrics / Send Logs).
+#      These are not secret (just endpoint/instance IDs).
 #   2. Fill in and SOPS-encrypt grafana-cloud-secret.yaml with a real API token
 #      (see comments in that file).
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -33,6 +31,26 @@ spec:
               name: grafana-cloud-credentials
               key: api-key
               optional: false
+        - name: GRAFANA_CLOUD_PROMETHEUS_URL
+          valueFrom:
+            secretKeyRef:
+              name: grafana-cloud-credentials
+              key: prometheus-url
+        - name: GRAFANA_CLOUD_PROMETHEUS_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: grafana-cloud-credentials
+              key: prometheus-username
+        - name: GRAFANA_CLOUD_LOKI_URL
+          valueFrom:
+            secretKeyRef:
+              name: grafana-cloud-credentials
+              key: loki-url
+        - name: GRAFANA_CLOUD_LOKI_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: grafana-cloud-credentials
+              key: loki-username
 
       configMap:
         create: true
@@ -74,10 +92,10 @@ spec:
 
           prometheus.remote_write "grafana_cloud" {
             endpoint {
-              url = "GRAFANA_CLOUD_PROMETHEUS_URL"
+              url = env("GRAFANA_CLOUD_PROMETHEUS_URL")
 
               basic_auth {
-                username = "GRAFANA_CLOUD_PROMETHEUS_USERNAME"
+                username = env("GRAFANA_CLOUD_PROMETHEUS_USERNAME")
                 password = env("GRAFANA_CLOUD_API_KEY")
               }
             }
@@ -112,10 +130,10 @@ spec:
 
           loki.write "grafana_cloud" {
             endpoint {
-              url = "GRAFANA_CLOUD_LOKI_URL"
+              url = env("GRAFANA_CLOUD_LOKI_URL")
 
               basic_auth {
-                username = "GRAFANA_CLOUD_LOKI_USERNAME"
+                username = env("GRAFANA_CLOUD_LOKI_USERNAME")
                 password = env("GRAFANA_CLOUD_API_KEY")
               }
             }
