@@ -1,6 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+- arc-controller.yaml
+- arc-cluster-runner.yaml
 - flux-system-secrets.yaml
 - metallb.yaml
 - metallb-config.yaml
@@ -13,6 +15,8 @@ resources:
 - rustdesk.yaml
 - renovate.yaml
 - gatus.yaml
+- keda.yaml
+- keda-http.yaml
 - mosquitto.yaml
 - reloader.yaml
 - grafana-alloy.yaml

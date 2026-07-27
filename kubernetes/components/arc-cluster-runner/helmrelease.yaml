@@ -1,0 +1,31 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: arc-cluster-runner
+  namespace: arc-system
+spec:
+  interval: 12h
+  dependsOn:
+    - name: arc-controller
+      namespace: arc-system
+  chart:
+    spec:
+      chart: gha-runner-scale-set
+      version: "0.14.2"
+      sourceRef:
+        kind: HelmRepository
+        name: arc
+        namespace: flux-system
+      interval: 12h
+  values:
+    githubConfigUrl: "https://github.com/hazim1093"
+    githubConfigSecret: arc-cluster-runner-secret
+    runnerScaleSetName: arc-cluster-runner
+    minRunners: 0
+    maxRunners: 1
+    template:
+      spec:
+        serviceAccountName: arc-cluster-runner
+        containers:
+          - name: runner
+            image: ghcr.io/actions/actions-runner:latest
