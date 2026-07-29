@@ -1,3 +1,5 @@
+# TODO: Need to create a GitHub App for Atlantis and use that instead of a personal access token. See https://www.runatlantis.io/docs/github-apps.html
+# Needs publicly accessible URL for GitHub webhooks to work. See https://www.runatlantis.io/docs/webhooks.html
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -19,7 +21,7 @@ spec:
       interval: 12h
   values:
     # Repository allowlist - restrict which repos Atlantis can operate on
-    orgAllowlist: "github.com/hazim1093/home-lab,github.com/hazim1093/youty-data-infrastructure"
+    orgAllowlist: "github.com/hazim1093/home-lab,github.com/acorto/youty-data-infrastructure"
 
     # GitHub credentials are injected from the atlantis-github-secret Secret
     github: {}
@@ -44,15 +46,15 @@ spec:
       limits:
         memory: 512Mi
   valuesFrom:
-    - kind: Secret
-      name: atlantis-github-secret
-      valuesKey: github-user
-      targetPath: github.user
-    - kind: Secret
-      name: atlantis-github-secret
-      valuesKey: github-token
-      targetPath: github.token
-    - kind: Secret
-      name: atlantis-github-secret
-      valuesKey: github-secret
-      targetPath: github.secret
+  - kind: Secret
+    name: atlantis-github-secret
+    valuesKey: github-user
+    targetPath: github.user
+  - kind: Secret
+    name: atlantis-github-secret
+    valuesKey: github-token
+    targetPath: github.token
+  - kind: Secret
+    name: atlantis-github-secret
+    valuesKey: github-secret
+    targetPath: github.secret
