@@ -10,6 +10,4 @@ resources:
 - pschichtel.yaml
 - twin.yaml
 - external-dns.yaml
-- stakater.yaml
-- grafana.yaml
-- kedacore.yaml
+- runatlantis.yaml

@@ -1,0 +1,21 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: atlantis
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  path: ./kubernetes/components/atlantis
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  healthChecks:
+  - apiVersion: helm.toolkit.fluxcd.io/v2
+    kind: HelmRelease
+    name: atlantis
+    namespace: atlantis
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age

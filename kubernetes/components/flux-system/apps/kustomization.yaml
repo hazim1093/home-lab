@@ -21,3 +21,4 @@ resources:
 - reloader.yaml
 - grafana-alloy.yaml
 - apps-dir.yaml
+- atlantis.yaml
