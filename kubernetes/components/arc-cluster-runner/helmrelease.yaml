@@ -18,7 +18,9 @@ spec:
         namespace: flux-system
       interval: 12h
   values:
-    githubConfigUrl: "https://github.com/hazim1093"
+    # TODO: workaround — personal accounts don't support account-level runners (only orgs do).
+    # Scoped to screener-rag for now. Fix options: create a GitHub org, or add per-repo runners for each new repo.
+    githubConfigUrl: "https://github.com/hazim1093/screener-rag"
     githubConfigSecret: arc-cluster-runner-secret
     runnerScaleSetName: arc-cluster-runner
     minRunners: 0
