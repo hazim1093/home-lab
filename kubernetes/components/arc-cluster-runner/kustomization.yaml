@@ -4,3 +4,4 @@ resources:
   - secret.yaml
   - rbac.yaml
   - helmrelease.yaml
+  - pull-secret.yaml
