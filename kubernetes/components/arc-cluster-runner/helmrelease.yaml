@@ -30,4 +30,4 @@ spec:
         serviceAccountName: arc-cluster-runner
         containers:
           - name: runner
-            image: ghcr.io/actions/actions-runner:latest
+            image: ghcr.io/hazim1093/arc-runner:latest
