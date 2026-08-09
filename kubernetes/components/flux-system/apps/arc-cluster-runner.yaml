@@ -5,6 +5,10 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   dependsOn:
     - name: arc-controller
   path: ./kubernetes/components/arc-cluster-runner
