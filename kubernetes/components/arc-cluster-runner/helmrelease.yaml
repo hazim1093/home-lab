@@ -31,3 +31,4 @@ spec:
         containers:
           - name: runner
             image: ghcr.io/hazim1093/arc-runner:latest
+            command: ["/home/runner/run.sh"]
