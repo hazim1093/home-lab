@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes
+  namespace: hermes
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hermes
+  template:
+    metadata:
+      labels:
+        app: hermes
+    spec:
+      imagePullSecrets:
+      - name: ghcr-pull-secret
+      # No default SA token — pod runs an LLM agent with shell/skill access.
+      automountServiceAccountToken: false
+      initContainers:
+      # Installs jq + kubectl onto /opt/data/.local/bin, already on the
+      # image's PATH — no shell wrapper needed on the main containers.
+      # git/curl skipped: already in the base image. jq is the static
+      # release binary, not apt, to avoid needing its .so deps on PATH.
+      - name: install-tools
+        image: ghcr.io/hazim1093/hermes-agent:1c9433897c7b8a3b2754a84875e8f86d0a42991a
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: data
+          mountPath: /opt/data
+        command: ["bash", "-c"]
+        args:
+        - |
+          set -euo pipefail
+          BIN_DIR=/opt/data/.local/bin
+          MARKER="$BIN_DIR/.installed"
+          if [ -f "$MARKER" ]; then
+            echo "tools already installed, skipping"
+            exit 0
+          fi
+          mkdir -p "$BIN_DIR"
+
+          KUBECTL_VERSION="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
+          curl -fsSL -o "$BIN_DIR/kubectl" \
+            "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+          chmod +x "$BIN_DIR/kubectl"
+
+          JQ_VERSION="jq-1.7.1"
+          curl -fsSL -o "$BIN_DIR/jq" \
+            "https://github.com/jqlang/jq/releases/download/${JQ_VERSION}/jq-linux-amd64"
+          chmod +x "$BIN_DIR/jq"
+
+          chown -R 10000:10000 /opt/data/.local
+          touch "$MARKER"
+          echo "tools installed"
+      containers:
+      # No `command:` override — keep the image's own ENTRYPOINT (s6 init)
+      # intact and only set `args:`, same as upstream's docker-compose.yml.
+      # Overriding command bypasses privilege drop / config bootstrap and
+      # there's no bare `gateway`/`dashboard` binary to exec directly.
+      - name: gateway
+        image: ghcr.io/hazim1093/hermes-agent:1c9433897c7b8a3b2754a84875e8f86d0a42991a
+        imagePullPolicy: IfNotPresent
+        args: ["gateway", "run"]
+        envFrom:
+        - secretRef:
+            name: hermes-secrets
+        - configMapRef:
+            name: hermes-config
+        ports:
+        - containerPort: 8642
+          name: gateway
+        volumeMounts:
+        - name: data
+          mountPath: /opt/data
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 100m
+          limits:
+            memory: 1Gi
+            cpu: 1000m
+      # --host 0.0.0.0 so the Service can reach it; this engages the
+      # dashboard's own auth gate (separate from Traefik's), hence the
+      # HERMES_DASHBOARD_BASIC_AUTH_* env below.
+      - name: dashboard
+        image: ghcr.io/hazim1093/hermes-agent:1c9433897c7b8a3b2754a84875e8f86d0a42991a
+        imagePullPolicy: IfNotPresent
+        args: ["dashboard", "--host", "0.0.0.0", "--no-open"]
+        envFrom:
+        # Dashboard gets the full hermes-secrets on purpose: its Settings UI
+        # reads/writes these same gateway env vars.
+        - secretRef:
+            name: hermes-secrets
+        - configMapRef:
+            name: hermes-config
+        env:
+        - name: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: hermes-dashboard-auth
+              key: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
+        - name: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: hermes-dashboard-auth
+              key: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
+        ports:
+        - containerPort: 9119
+          name: dashboard
+        volumeMounts:
+        - name: data
+          mountPath: /opt/data
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 512Mi
+            cpu: 500m
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: hermes-data

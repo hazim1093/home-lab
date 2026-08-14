@@ -21,3 +21,4 @@ resources:
 - reloader.yaml
 - grafana-alloy.yaml
 - private-apps.yaml
+- apps.yaml

@@ -1,0 +1,62 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: hermes-dashboard
+  namespace: hermes
+  annotations:
+    gatus.home-operations.com/enabled: "true"
+    gatus.home-operations.com/endpoint: |
+      url: "http://hermes-dashboard.hermes.svc.cluster.local:9119"
+      interval: 60s
+      conditions:
+        - "[STATUS] == 200"
+spec:
+  parentRefs:
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: websecure
+  hostnames:
+  - "hermes.${LOCAL_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: hermes-basic-auth
+    backendRefs:
+    - name: hermes-dashboard
+      port: 9119
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: hermes-gateway
+  namespace: hermes
+  annotations:
+    gatus.home-operations.com/enabled: "true"
+    # /health is unauthenticated; / requires API_SERVER_KEY, so Gatus checks /health.
+    gatus.home-operations.com/endpoint: |
+      url: "http://hermes-gateway.hermes.svc.cluster.local:8642/health"
+      interval: 60s
+      conditions:
+        - "[STATUS] == 200"
+spec:
+  parentRefs:
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: websecure
+  hostnames:
+  - "hermes-api.${LOCAL_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: hermes-gateway
+      port: 8642

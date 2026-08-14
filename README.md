@@ -37,4 +37,7 @@ sops --encrypt --in-place secret.yaml
 
 # Edit encrypted secrets
 sops secret.yaml
+
+# Decrypt secrets
+sops --decrypt secret.yaml > decrypted.yaml
 ```
