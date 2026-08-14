@@ -1,0 +1,18 @@
+# Static allowlist of namespaces whose HTTPRoutes may target the interceptor's
+# proxy Service. Add one `from` entry per always-on app that routes through KEDA.
+# Ephemeral per-PR preview namespaces are granted separately (dynamic, created
+# and torn down alongside the preview itself) — do not add those here.
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: keda-http-interceptor-access
+  namespace: keda-http
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    namespace: screener
+  to:
+  - group: ""
+    kind: Service
+    name: keda-add-ons-http-interceptor-proxy

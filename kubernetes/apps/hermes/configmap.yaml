@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-config
+  namespace: hermes
+data:
+  OPENAI_BASE_URL: "https://api.deepseek.com/v1"
+  API_SERVER_HOST: "0.0.0.0"
+  HERMES_UID: "10000"
+  HERMES_GID: "10000"
