@@ -87,8 +87,8 @@ spec:
             memory: 1Gi
             cpu: 1000m
       # --host 0.0.0.0 so the Service can reach it; this engages the
-      # dashboard's own auth gate (separate from Traefik's), hence the
-      # HERMES_DASHBOARD_BASIC_AUTH_* env below.
+      # dashboard's own auth gate, hence the HERMES_DASHBOARD_BASIC_AUTH_*
+      # env below.
       - name: dashboard
         image: ghcr.io/hazim1093/hermes-agent:1c9433897c7b8a3b2754a84875e8f86d0a42991a
         imagePullPolicy: IfNotPresent
