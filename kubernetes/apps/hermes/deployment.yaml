@@ -48,12 +48,12 @@ spec:
 
           KUBECTL_VERSION="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
           curl -fsSL -o "$BIN_DIR/kubectl" \
-            "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+            "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl"
           chmod +x "$BIN_DIR/kubectl"
 
           JQ_VERSION="jq-1.7.1"
           curl -fsSL -o "$BIN_DIR/jq" \
-            "https://github.com/jqlang/jq/releases/download/${JQ_VERSION}/jq-linux-amd64"
+            "https://github.com/jqlang/jq/releases/download/$JQ_VERSION/jq-linux-amd64"
           chmod +x "$BIN_DIR/jq"
 
           chown -R 10000:10000 /opt/data/.local
