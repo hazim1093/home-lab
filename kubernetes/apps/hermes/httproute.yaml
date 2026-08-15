@@ -22,12 +22,6 @@ spec:
     - path:
         type: PathPrefix
         value: /
-    filters:
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: hermes-basic-auth
     backendRefs:
     - name: hermes-dashboard
       port: 9119
