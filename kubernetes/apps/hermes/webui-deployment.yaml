@@ -1,11 +1,13 @@
 # Separate Deployment (not a container in the main hermes pod) so a webui
 # crash/restart doesn't force a Recreate of the gateway+dashboard pod.
-# Safe to split out despite the shared PVC: this is a single-node K3s
-# cluster (see cluster/k3s/config.yaml — no separate agent config), and
-# hermes-data is ReadWriteOnce on local-path (node-local hostPath), which
-# only restricts the volume to one *node* — multiple pods on that same
-# node can mount it concurrently. If a second node is ever added, this
-# would need reworking (e.g. a dedicated node-local volume or RWX storage).
+# Safe to split out despite the shared PVC: hermes-data is ReadWriteOnce on
+# local-path (node-local hostPath), which only restricts the volume to one
+# *node* — multiple pods on that node can mount it concurrently. The
+# local-path provisioner bakes node affinity into the PV itself, so k8s
+# always schedules any pod using this PVC onto the node that provisioned
+# it — this holds however many nodes the cluster has. The permanent
+# tradeoff is that hermes and hermes-webui stay pinned to that one node
+# together for as long as they share this PVC, regardless of cluster size.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
