@@ -9,5 +9,6 @@ resources:
   - dashboard-internal-auth-secret.yaml
   - webui-auth-secret.yaml
   - deployment.yaml
+  - webui-deployment.yaml
   - service.yaml
   - httproute.yaml

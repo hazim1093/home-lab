@@ -1,0 +1,76 @@
+# Separate Deployment (not a container in the main hermes pod) so a webui
+# crash/restart doesn't force a Recreate of the gateway+dashboard pod.
+# Safe to split out despite the shared PVC: this is a single-node K3s
+# cluster (see cluster/k3s/config.yaml — no separate agent config), and
+# hermes-data is ReadWriteOnce on local-path (node-local hostPath), which
+# only restricts the volume to one *node* — multiple pods on that same
+# node can mount it concurrently. If a second node is ever added, this
+# would need reworking (e.g. a dedicated node-local volume or RWX storage).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes-webui
+  namespace: hermes
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hermes-webui
+  template:
+    metadata:
+      labels:
+        app: hermes-webui
+    spec:
+      # No default SA token — runs the agent in-process with shell/skill access.
+      automountServiceAccountToken: false
+      containers:
+      - name: webui
+        image: ghcr.io/nesquena/hermes-webui:0.52.113
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: HERMES_HOME
+          value: /opt/data
+        - name: HERMES_WEBUI_HOST
+          value: "0.0.0.0"
+        - name: HERMES_WEBUI_PORT
+          value: "8787"
+        - name: HERMES_WEBUI_STATE_DIR
+          value: /opt/data/webui
+        # No longer same pod as the gateway — reach it over the Service.
+        - name: HERMES_API_URL
+          value: http://hermes-gateway.hermes.svc.cluster.local:8642
+        - name: WANTED_UID
+          value: "10000"
+        - name: WANTED_GID
+          value: "10000"
+        - name: HERMES_WEBUI_GATEWAY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: hermes-secrets
+              key: API_SERVER_KEY
+        - name: HERMES_WEBUI_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: hermes-webui-auth
+              key: HERMES_WEBUI_PASSWORD
+        ports:
+        - containerPort: 8787
+          name: webui
+        volumeMounts:
+        - name: data
+          mountPath: /opt/data
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 512Mi
+            cpu: 500m
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: hermes-data

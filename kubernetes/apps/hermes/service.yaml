@@ -33,7 +33,7 @@ metadata:
   namespace: hermes
 spec:
   selector:
-    app: hermes
+    app: hermes-webui
   ports:
   - name: http
     port: 8787
