@@ -104,12 +104,12 @@ spec:
         - name: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
           valueFrom:
             secretKeyRef:
-              name: hermes-dashboard-auth
+              name: hermes-dashboard-internal-auth
               key: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
         - name: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: hermes-dashboard-auth
+              name: hermes-dashboard-internal-auth
               key: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
         ports:
         - containerPort: 9119

@@ -7,6 +7,7 @@ resources:
   - configmap.yaml
   - secret.yaml
   - dashboard-auth-secret.yaml
+  - dashboard-internal-auth-secret.yaml
   - middleware.yaml
   - deployment.yaml
   - service.yaml
