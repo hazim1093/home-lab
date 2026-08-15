@@ -25,3 +25,17 @@ spec:
     port: 9119
     targetPort: 9119
     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hermes-webui
+  namespace: hermes
+spec:
+  selector:
+    app: hermes
+  ports:
+  - name: http
+    port: 8787
+    targetPort: 8787
+    protocol: TCP

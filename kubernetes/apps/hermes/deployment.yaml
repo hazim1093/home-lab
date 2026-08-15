@@ -124,6 +124,50 @@ spec:
           limits:
             memory: 512Mi
             cpu: 500m
+      # Runs the agent in-process against the same HERMES_HOME (/opt/data) the
+      # gateway/dashboard use, and reaches the gateway over localhost since
+      # all three containers share this pod's network namespace.
+      - name: webui
+        image: ghcr.io/nesquena/hermes-webui:0.52.113
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: HERMES_HOME
+          value: /opt/data
+        - name: HERMES_WEBUI_HOST
+          value: "0.0.0.0"
+        - name: HERMES_WEBUI_PORT
+          value: "8787"
+        - name: HERMES_WEBUI_STATE_DIR
+          value: /opt/data/webui
+        - name: HERMES_API_URL
+          value: http://localhost:8642
+        - name: WANTED_UID
+          value: "10000"
+        - name: WANTED_GID
+          value: "10000"
+        - name: HERMES_WEBUI_GATEWAY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: hermes-secrets
+              key: API_SERVER_KEY
+        - name: HERMES_WEBUI_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: hermes-webui-auth
+              key: HERMES_WEBUI_PASSWORD
+        ports:
+        - containerPort: 8787
+          name: webui
+        volumeMounts:
+        - name: data
+          mountPath: /opt/data
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 512Mi
+            cpu: 500m
       volumes:
       - name: data
         persistentVolumeClaim:
