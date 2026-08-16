@@ -18,6 +18,8 @@ spec:
       labels:
         app: hermes-webui
     spec:
+      imagePullSecrets:
+      - name: ghcr-pull-secret
       # No default SA token — runs the agent in-process with shell/skill access.
       automountServiceAccountToken: false
       # Populates agent-src for webui's optional hermes-agent integration.
