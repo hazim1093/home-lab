@@ -20,9 +20,18 @@ spec:
     spec:
       # No default SA token — runs the agent in-process with shell/skill access.
       automountServiceAccountToken: false
+      # Populates agent-src for webui's optional hermes-agent integration.
+      initContainers:
+      - name: copy-agent-src
+        image: ghcr.io/hazim1093/hermes-agent
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c", "cp -r /opt/hermes/. /agent-src/"]
+        volumeMounts:
+        - name: agent-src
+          mountPath: /agent-src
       containers:
       - name: webui
-        image: ghcr.io/nesquena/hermes-webui:0.52.113
+        image: ghcr.io/nesquena/hermes-webui
         imagePullPolicy: IfNotPresent
         env:
         - name: HERMES_HOME
@@ -56,6 +65,9 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /opt/data
+        - name: agent-src
+          mountPath: /home/hermeswebui/.hermes/hermes-agent
+          readOnly: true
         resources:
           requests:
             memory: 128Mi
@@ -67,3 +79,5 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: hermes-data
+      - name: agent-src
+        emptyDir: {}
