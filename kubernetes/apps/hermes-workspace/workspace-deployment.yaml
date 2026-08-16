@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes-workspace
+  namespace: hermes-workspace
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hermes-workspace
+  template:
+    metadata:
+      labels:
+        app: hermes-workspace
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: workspace
+        image: ghcr.io/outsourc-e/hermes-workspace@sha256:bf0fd5e65c4ec45b7f772630946b60b1b4424b586eeba08ba3afa54da43990fa
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "3000"
+        - name: HERMES_API_URL
+          value: http://hermes-gateway.hermes.svc.cluster.local:8642
+        - name: HERMES_DASHBOARD_URL
+          value: http://hermes-dashboard.hermes.svc.cluster.local:9119
+        - name: TRUST_PROXY
+          value: "1"
+        - name: VITE_HERMESWORLD_ENABLED
+          value: "0"
+        - name: HERMES_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hermes-workspace-gateway-key
+              key: API_SERVER_KEY
+        - name: HERMES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: hermes-workspace-auth
+              key: HERMES_PASSWORD
+        ports:
+        - containerPort: 3000
+          name: workspace
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 512Mi
+            cpu: 500m

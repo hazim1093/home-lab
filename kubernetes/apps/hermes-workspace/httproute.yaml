@@ -1,0 +1,27 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: hermes-workspace
+  namespace: hermes-workspace
+  annotations:
+    gatus.home-operations.com/enabled: "true"
+    gatus.home-operations.com/endpoint: |
+      url: "http://hermes-workspace.hermes-workspace.svc.cluster.local:3000"
+      interval: 60s
+      conditions:
+        - "[STATUS] == 200 || [STATUS] == 302"
+spec:
+  parentRefs:
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: websecure
+  hostnames:
+  - "hermes-workspace.${LOCAL_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: hermes-workspace
+      port: 3000
