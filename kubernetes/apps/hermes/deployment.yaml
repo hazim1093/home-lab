@@ -86,9 +86,11 @@ spec:
           limits:
             memory: 1Gi
             cpu: 1000m
-      # --host 0.0.0.0 so the Service can reach it; this engages the
-      # dashboard's own auth gate, hence the HERMES_DASHBOARD_BASIC_AUTH_*
-      # env below.
+      # --host 0.0.0.0 so the Service can reach it. Auth is Traefik-layer
+      # only (hermes-basic-auth Middleware) now — the dashboard's own
+      # HERMES_DASHBOARD_BASIC_AUTH_* gate is disabled below because a
+      # gated dashboard never injects window.__HERMES_SESSION_TOKEN__,
+      # which hermes-workspace requires.
       - name: dashboard
         image: ghcr.io/hazim1093/hermes-agent
         imagePullPolicy: IfNotPresent
@@ -100,17 +102,17 @@ spec:
             name: hermes-secrets
         - configMapRef:
             name: hermes-config
-        env:
-        - name: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: hermes-dashboard-internal-auth
-              key: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
-        - name: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: hermes-dashboard-internal-auth
-              key: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
+        # env:
+        # - name: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: hermes-dashboard-internal-auth
+        #       key: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
+        # - name: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: hermes-dashboard-internal-auth
+        #       key: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
         ports:
         - containerPort: 9119
           name: dashboard

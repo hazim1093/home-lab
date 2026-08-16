@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hermes-restrict-ingress
+  namespace: hermes
+spec:
+  podSelector:
+    matchLabels:
+      app: hermes
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    # Same namespace (gateway<->dashboard, and anything else in hermes)
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: hermes
+    # hermes-workspace talks to hermes-gateway/hermes-dashboard over ClusterDNS
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: hermes-workspace
+    # Traefik proxies hermes.${LOCAL_DOMAIN} / hermes-api.${LOCAL_DOMAIN} here
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+    # Gatus health-checks hermes-gateway/hermes-dashboard directly
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: gatus
