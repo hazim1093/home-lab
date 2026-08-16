@@ -64,6 +64,10 @@ spec:
       # intact and only set `args:`, same as upstream's docker-compose.yml.
       # Overriding command bypasses privilege drop / config bootstrap and
       # there's no bare `gateway`/`dashboard` binary to exec directly.
+      # One container, not two: HERMES_DASHBOARD=1 makes the image's own s6
+      # supervise dashboard alongside gateway-default, sharing one /run/service
+      # — required for the dashboard's Start/Stop-gateway control to see
+      # gateway at all (it signals a local sibling s6 service, not cross-container).
       - name: gateway
         image: ghcr.io/hazim1093/hermes-agent
         imagePullPolicy: IfNotPresent
@@ -73,34 +77,9 @@ spec:
             name: hermes-secrets
         - configMapRef:
             name: hermes-config
-        ports:
-        - containerPort: 8642
-          name: gateway
-        volumeMounts:
-        - name: data
-          mountPath: /opt/data
-        resources:
-          requests:
-            memory: 256Mi
-            cpu: 100m
-          limits:
-            memory: 1Gi
-            cpu: 1000m
-      # --host 0.0.0.0 so the Service can reach it; this engages the
-      # dashboard's own auth gate, hence the HERMES_DASHBOARD_BASIC_AUTH_*
-      # env below.
-      - name: dashboard
-        image: ghcr.io/hazim1093/hermes-agent
-        imagePullPolicy: IfNotPresent
-        args: ["dashboard", "--host", "0.0.0.0", "--no-open"]
-        envFrom:
-        # Dashboard gets the full hermes-secrets on purpose: its Settings UI
-        # reads/writes these same gateway env vars.
-        - secretRef:
-            name: hermes-secrets
-        - configMapRef:
-            name: hermes-config
         env:
+        - name: HERMES_DASHBOARD
+          value: "1"
         - name: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
           valueFrom:
             secretKeyRef:
@@ -112,6 +91,8 @@ spec:
               name: hermes-dashboard-internal-auth
               key: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
         ports:
+        - containerPort: 8642
+          name: gateway
         - containerPort: 9119
           name: dashboard
         volumeMounts:
@@ -119,11 +100,11 @@ spec:
           mountPath: /opt/data
         resources:
           requests:
-            memory: 128Mi
-            cpu: 50m
+            memory: 384Mi
+            cpu: 150m
           limits:
-            memory: 512Mi
-            cpu: 500m
+            memory: 1536Mi
+            cpu: 1500m
       volumes:
       - name: data
         persistentVolumeClaim:
