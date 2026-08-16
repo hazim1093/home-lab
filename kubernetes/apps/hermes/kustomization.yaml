@@ -7,15 +7,9 @@ resources:
   - configmap.yaml
   - secret.yaml
   - dashboard-internal-auth-secret.yaml
-  - webui-auth-secret.yaml
   - deployment.yaml
-  - webui-deployment.yaml
   - service.yaml
   - httproute.yaml
 images:
   - name: ghcr.io/hazim1093/hermes-agent
     newTag: 1c9433897c7b8a3b2754a84875e8f86d0a42991a
-  # TEMPORARY until upstream releases a webui image with the editable-install fix.
-  - name: ghcr.io/nesquena/hermes-webui
-    newName: ghcr.io/hazim1093/hermes-webui
-    newTag: dc3bf44e5751264de3cf0c773421d412ca840c28
