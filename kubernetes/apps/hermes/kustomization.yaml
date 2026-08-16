@@ -6,9 +6,7 @@ resources:
   - pull-secret.yaml
   - configmap.yaml
   - secret.yaml
-  - dashboard-auth-secret.yaml
   - dashboard-internal-auth-secret.yaml
-  - middleware.yaml
   - networkpolicy.yaml
   - deployment.yaml
   - service.yaml
