@@ -17,6 +17,9 @@ spec:
       labels:
         app: hermes
     spec:
+      # Off: HERMES_DASHBOARD_PORT auto-injected from the hermes-dashboard
+      # Service collides with the app's own env var of the same name.
+      enableServiceLinks: false
       imagePullSecrets:
       - name: ghcr-pull-secret
       # No default SA token — pod runs an LLM agent with shell/skill access.
