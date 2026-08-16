@@ -12,3 +12,6 @@ resources:
   - webui-deployment.yaml
   - service.yaml
   - httproute.yaml
+images:
+  - name: ghcr.io/hazim1093/hermes-agent
+    newTag: 1c9433897c7b8a3b2754a84875e8f86d0a42991a

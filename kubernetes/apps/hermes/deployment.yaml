@@ -27,7 +27,7 @@ spec:
       # git/curl skipped: already in the base image. jq is the static
       # release binary, not apt, to avoid needing its .so deps on PATH.
       - name: install-tools
-        image: ghcr.io/hazim1093/hermes-agent:1c9433897c7b8a3b2754a84875e8f86d0a42991a
+        image: ghcr.io/hazim1093/hermes-agent
         imagePullPolicy: IfNotPresent
         securityContext:
           runAsUser: 0
@@ -65,7 +65,7 @@ spec:
       # Overriding command bypasses privilege drop / config bootstrap and
       # there's no bare `gateway`/`dashboard` binary to exec directly.
       - name: gateway
-        image: ghcr.io/hazim1093/hermes-agent:1c9433897c7b8a3b2754a84875e8f86d0a42991a
+        image: ghcr.io/hazim1093/hermes-agent
         imagePullPolicy: IfNotPresent
         args: ["gateway", "run"]
         envFrom:
@@ -90,7 +90,7 @@ spec:
       # dashboard's own auth gate, hence the HERMES_DASHBOARD_BASIC_AUTH_*
       # env below.
       - name: dashboard
-        image: ghcr.io/hazim1093/hermes-agent:1c9433897c7b8a3b2754a84875e8f86d0a42991a
+        image: ghcr.io/hazim1093/hermes-agent
         imagePullPolicy: IfNotPresent
         args: ["dashboard", "--host", "0.0.0.0", "--no-open"]
         envFrom:

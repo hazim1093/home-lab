@@ -1,13 +1,4 @@
-# Separate Deployment (not a container in the main hermes pod) so a webui
-# crash/restart doesn't force a Recreate of the gateway+dashboard pod.
-# Safe to split out despite the shared PVC: hermes-data is ReadWriteOnce on
-# local-path (node-local hostPath), which only restricts the volume to one
-# *node* — multiple pods on that node can mount it concurrently. The
-# local-path provisioner bakes node affinity into the PV itself, so k8s
-# always schedules any pod using this PVC onto the node that provisioned
-# it — this holds however many nodes the cluster has. The permanent
-# tradeoff is that hermes and hermes-webui stay pinned to that one node
-# together for as long as they share this PVC, regardless of cluster size.
+# Shares the hermes-data PVC (RWO local-path) safely — both pods pin to the same node.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,6 +20,17 @@ spec:
     spec:
       # No default SA token — runs the agent in-process with shell/skill access.
       automountServiceAccountToken: false
+      # Populates agent-src below so webui can find hermes-agent (enables
+      # webhooks, model auto-detection, etc.) — see docker-compose.two-container.yml
+      # in nesquena/hermes-webui upstream.
+      initContainers:
+      - name: copy-agent-src
+        image: ghcr.io/hazim1093/hermes-agent
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c", "cp -r /opt/hermes/. /agent-src/"]
+        volumeMounts:
+        - name: agent-src
+          mountPath: /agent-src
       containers:
       - name: webui
         image: ghcr.io/nesquena/hermes-webui:0.52.113
@@ -65,6 +67,9 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /opt/data
+        - name: agent-src
+          mountPath: /opt/hermes
+          readOnly: true
         resources:
           requests:
             memory: 128Mi
@@ -76,3 +81,5 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: hermes-data
+      - name: agent-src
+        emptyDir: {}
