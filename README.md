@@ -41,3 +41,17 @@ sops secret.yaml
 # Decrypt secrets
 sops --decrypt secret.yaml > decrypted.yaml
 ```
+
+### Agent (Hermes) key access
+
+Hermes (the agent box) decrypts with its own age key — an extra recipient
+listed in `.sops.yaml`. Your key and the cluster's `sops-age` secret are
+unaffected.
+
+```bash
+# Re-wrap existing encrypted files to include the agent key
+sops updatekeys -r kubernetes/
+
+# Revoke the agent: remove its key from .sops.yaml, then re-wrap again
+sops updatekeys -r kubernetes/
+```
