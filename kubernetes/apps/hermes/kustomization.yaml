@@ -8,6 +8,8 @@ resources:
   - secret.yaml
   - dashboard-internal-auth-secret.yaml
   - networkpolicy.yaml
+  - agent-serviceaccount.yaml
+  - agent-clusterrolebinding.yaml
   - deployment.yaml
   - service.yaml
   - httproute.yaml

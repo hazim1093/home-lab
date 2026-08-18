@@ -22,8 +22,10 @@ spec:
       enableServiceLinks: false
       imagePullSecrets:
       - name: ghcr-pull-secret
-      # No default SA token — pod runs an LLM agent with shell/skill access.
-      automountServiceAccountToken: false
+      # Dedicated SA (not "default") bound to the view ClusterRole, so the
+      # agent's cluster access is separately named/revocable.
+      serviceAccountName: hermes-agent
+      automountServiceAccountToken: true
       initContainers:
       # Installs jq + kubectl + gh onto /opt/data/.local/bin, already on the
       # image's PATH — no shell wrapper needed on the main containers.
