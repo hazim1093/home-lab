@@ -1,4 +1,6 @@
 creation_rules:
 # Encrypt all YAML files containing Kubernetes Secrets
 - encrypted_regex: ^(data|stringData)$
-  age: age1s84t0ws8cpp8ujf8mny373gg63g9d52fezrdwe24jdfe4d309pwqvawpcu
+  age:
+  - age1s84t0ws8cpp8ujf8mny373gg63g9d52fezrdwe24jdfe4d309pwqvawpcu
+  - age1470xftejp68uy54dn9vxwhnyuhgvpmf533nmn3mfya7uz558u3ls6v0r79
