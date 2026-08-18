@@ -13,4 +13,5 @@ resources:
 - stakater.yaml
 - grafana.yaml
 - kedacore.yaml
+- prometheus-community.yaml
 - home-lab-private.yaml

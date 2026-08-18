@@ -22,5 +22,6 @@ resources:
 - grafana-alloy.yaml
 - grafana-operator.yaml
 - grafana-dashboards.yaml
+- kube-state-metrics.yaml
 - private-apps.yaml
 - apps.yaml
