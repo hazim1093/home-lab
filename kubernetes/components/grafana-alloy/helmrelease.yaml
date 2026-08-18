@@ -216,6 +216,115 @@ spec:
             forward_to = [prometheus.remote_write.grafana_cloud.receiver]
           }
 
+          // ---- node-exporter: host-level CPU/RAM/network/filesystem, needed for the
+          // dotdc Global/Nodes dashboards' $job and $instance variables (node_cpu_seconds_total,
+          // node_uname_info) which kube-state-metrics/cadvisor don't provide ----
+          discovery.kubernetes "node_exporter" {
+            role = "pod"
+            namespaces {
+              names = ["node-exporter"]
+            }
+          }
+
+          discovery.relabel "node_exporter" {
+            targets = discovery.kubernetes.node_exporter.targets
+
+            rule {
+              source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+              regex         = "prometheus-node-exporter"
+              action        = "keep"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_pod_container_port_number"]
+              regex         = "8100"
+              action        = "keep"
+            }
+          }
+
+          prometheus.scrape "node_exporter" {
+            targets          = discovery.relabel.node_exporter.output
+            job_name         = "integrations/kubernetes/node-exporter"
+            scrape_interval  = "60s"
+            forward_to       = [prometheus.relabel.node_exporter_filter.receiver]
+          }
+
+          // Deliberately narrower than the dashboards could use: only what's actually
+          // load-bearing for basic node health (CPU, load, RAM, disk/net throughput+errors)
+          // plus the two identity metrics ($instance/$job variables need them). Dropped as
+          // avoidable: context switches, interrupts, conntrack, file descriptors, NTP/timex,
+          // packet counts, disk IOPS, per-core throttling - niche, rarely acted on here.
+          prometheus.relabel "node_exporter_filter" {
+            max_cache_size = 100000
+
+            rule {
+              source_labels = ["__name__"]
+              regex         = "up|scrape_samples_scraped|node_uname_info|node_boot_time_seconds|node_cpu_seconds_total|node_load1|node_load5|node_load15|node_memory_MemTotal_bytes|node_memory_MemAvailable_bytes|node_memory_SwapTotal_bytes|node_memory_SwapFree_bytes|node_filesystem_avail_bytes|node_filesystem_size_bytes|node_disk_read_bytes_total|node_disk_written_bytes_total|node_network_receive_bytes_total|node_network_transmit_bytes_total|node_network_receive_drop_total|node_network_transmit_drop_total|node_network_receive_errs_total|node_network_transmit_errs_total"
+              action        = "keep"
+            }
+            // Only real block devices, not loop/dm/partitions (mirrors the cadvisor filter above)
+            rule {
+              source_labels = ["__name__", "device"]
+              separator     = "@"
+              regex         = "node_disk_.*@(mmcblk.p.+|nvme.+|rbd.+|sd.+|vd.+|xvd.+|dasd.+)"
+              target_label  = "__keepme"
+              replacement   = "1"
+            }
+            rule {
+              source_labels = ["__name__", "__keepme"]
+              separator     = "@"
+              regex         = "node_disk_.*@"
+              action        = "drop"
+            }
+            rule {
+              source_labels = ["__name__"]
+              regex         = "node_disk_.*"
+              target_label  = "__keepme"
+              replacement   = ""
+            }
+            // Only real filesystems, not tmpfs/overlay/proc/sysfs mounts
+            rule {
+              source_labels = ["__name__", "fstype"]
+              separator     = "@"
+              regex         = "node_filesystem_.*@(ext[234]|xfs|btrfs|zfs|vfat|ntfs)"
+              target_label  = "__keepme"
+              replacement   = "1"
+            }
+            rule {
+              source_labels = ["__name__", "__keepme"]
+              separator     = "@"
+              regex         = "node_filesystem_.*@"
+              action        = "drop"
+            }
+            rule {
+              source_labels = ["__name__"]
+              regex         = "node_filesystem_.*"
+              target_label  = "__keepme"
+              replacement   = ""
+            }
+            // Only real interfaces, not veth/cni/docker/loopback
+            rule {
+              source_labels = ["__name__", "device"]
+              separator     = "@"
+              regex         = "node_network_.*@(en[ospx][0-9].*|wlan[0-9].*|eth[0-9].*)"
+              target_label  = "__keepme"
+              replacement   = "1"
+            }
+            rule {
+              source_labels = ["__name__", "__keepme"]
+              separator     = "@"
+              regex         = "node_network_.*@"
+              action        = "drop"
+            }
+            rule {
+              source_labels = ["__name__"]
+              regex         = "node_network_.*"
+              target_label  = "__keepme"
+              replacement   = ""
+            }
+
+            forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+          }
+
           prometheus.remote_write "grafana_cloud" {
             // Adds a "cluster" label to every series. The dotdc dashboards' $cluster
             // variable (label_values(kube_node_info, cluster)) and per-panel
