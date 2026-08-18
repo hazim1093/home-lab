@@ -217,6 +217,13 @@ spec:
           }
 
           prometheus.remote_write "grafana_cloud" {
+            // Adds a "cluster" label to every series. The dotdc dashboards' $cluster
+            // variable (label_values(kube_node_info, cluster)) and per-panel
+            // cluster="$cluster" filters need this - nothing upstream sets it otherwise.
+            external_labels = {
+              cluster = "home-lab",
+            }
+
             endpoint {
               url = env("GRAFANA_CLOUD_PROMETHEUS_URL")
 
