@@ -25,7 +25,7 @@ spec:
       # No default SA token — pod runs an LLM agent with shell/skill access.
       automountServiceAccountToken: false
       initContainers:
-      # Installs jq + kubectl onto /opt/data/.local/bin, already on the
+      # Installs jq + kubectl + gh onto /opt/data/.local/bin, already on the
       # image's PATH — no shell wrapper needed on the main containers.
       # git/curl skipped: already in the base image. jq is the static
       # release binary, not apt, to avoid needing its .so deps on PATH.
@@ -58,6 +58,12 @@ spec:
           curl -fsSL -o "$BIN_DIR/jq" \
             "https://github.com/jqlang/jq/releases/download/$JQ_VERSION/jq-linux-amd64"
           chmod +x "$BIN_DIR/jq"
+
+          GH_VERSION="2.97.0"
+          curl -fsSL "https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_amd64.tar.gz" \
+            | tar -xz -C /tmp "gh_${GH_VERSION}_linux_amd64/bin/gh"
+          mv "/tmp/gh_${GH_VERSION}_linux_amd64/bin/gh" "$BIN_DIR/gh"
+          chmod +x "$BIN_DIR/gh"
 
           chown -R 10000:10000 /opt/data/.local
           touch "$MARKER"
