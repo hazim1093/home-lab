@@ -236,7 +236,7 @@ spec:
             }
             rule {
               source_labels = ["__meta_kubernetes_pod_container_port_number"]
-              regex         = "8100"
+              regex         = "9100"
               action        = "keep"
             }
           }
