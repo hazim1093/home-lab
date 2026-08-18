@@ -1,0 +1,54 @@
+# Standard Kubernetes dashboards from https://github.com/dotdc/grafana-dashboards-kubernetes,
+# imported straight from grafana.com. Built for the same cadvisor/kubelet job names
+# grafana-alloy already scrapes (integrations/kubernetes/cadvisor, integrations/kubernetes/kubelet).
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-views-global
+  namespace: grafana-operator
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana-cloud
+  folder: Kubernetes
+  grafanaCom:
+    id: 15757
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-views-namespaces
+  namespace: grafana-operator
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana-cloud
+  folder: Kubernetes
+  grafanaCom:
+    id: 15758
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-views-nodes
+  namespace: grafana-operator
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana-cloud
+  folder: Kubernetes
+  grafanaCom:
+    id: 15759
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-views-pods
+  namespace: grafana-operator
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana-cloud
+  folder: Kubernetes
+  grafanaCom:
+    id: 15760

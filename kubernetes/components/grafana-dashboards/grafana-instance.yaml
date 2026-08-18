@@ -1,0 +1,15 @@
+# Points the operator at the existing Grafana Cloud stack (same one grafana-alloy
+# ships metrics/logs to) instead of provisioning a new self-hosted Grafana.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: Grafana
+metadata:
+  name: grafana-cloud
+  namespace: grafana-operator
+  labels:
+    dashboards: grafana-cloud
+spec:
+  external:
+    url: https://curiouscherry3474.grafana.net
+    apiKey:
+      name: grafana-cloud-api-key
+      key: api-key

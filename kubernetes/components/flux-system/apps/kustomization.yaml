@@ -20,5 +20,7 @@ resources:
 - mosquitto.yaml
 - reloader.yaml
 - grafana-alloy.yaml
+- grafana-operator.yaml
+- grafana-dashboards.yaml
 - private-apps.yaml
 - apps.yaml

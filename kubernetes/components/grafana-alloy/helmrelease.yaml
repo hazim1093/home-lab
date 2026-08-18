@@ -72,7 +72,7 @@ spec:
               insecure_skip_verify = true
             }
 
-            forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+            forward_to = [prometheus.relabel.cadvisor_filter.receiver]
           }
 
           prometheus.scrape "kubelet" {
@@ -85,6 +85,87 @@ spec:
 
             tls_config {
               insecure_skip_verify = true
+            }
+
+            forward_to = [prometheus.relabel.kubelet_filter.receiver]
+          }
+
+          // Trims cardinality to stay under the Grafana Cloud free-tier active-series cap.
+          // Source: github.com/grafana/k8s-monitoring-helm allowLists/cadvisor.yaml + its reference Alloy config.
+          prometheus.relabel "cadvisor_filter" {
+            max_cache_size = 100000
+
+            rule {
+              source_labels = ["__name__"]
+              regex         = "up|scrape_samples_scraped|container_cpu_cfs_periods_total|container_cpu_cfs_throttled_periods_total|container_cpu_usage_seconds_total|container_fs_reads_bytes_total|container_fs_reads_total|container_fs_writes_bytes_total|container_fs_writes_total|container_memory_cache|container_memory_rss|container_memory_swap|container_memory_usage_bytes|container_memory_working_set_bytes|container_network_receive_bytes_total|container_network_receive_packets_dropped_total|container_network_receive_packets_total|container_network_transmit_bytes_total|container_network_transmit_packets_dropped_total|container_network_transmit_packets_total|machine_memory_bytes"
+              action        = "keep"
+            }
+            // Drop the empty-container/pause-container series cadvisor emits per cgroup
+            // (github.com/google/cadvisor/issues/2688)
+            rule {
+              source_labels = ["__name__", "container"]
+              separator     = "@"
+              regex         = "(container_cpu_.*|container_fs_.*|container_memory_.*|container_pressure_.*)@"
+              action        = "drop"
+            }
+            rule {
+              source_labels = ["__name__", "image"]
+              separator     = "@"
+              regex         = "(container_cpu_.*|container_fs_.*|container_memory_.*|container_network_.*|container_pressure_.*)@"
+              action        = "drop"
+            }
+            // Only keep filesystem series for real physical devices, not every loop/tmpfs mount
+            rule {
+              source_labels = ["__name__", "device"]
+              separator     = "@"
+              regex         = "container_fs_.*@(/dev/)?(mmcblk.p.+|nvme.+|rbd.+|sd.+|vd.+|xvd.+|dasd.+)"
+              target_label  = "__keepme"
+              replacement   = "1"
+            }
+            rule {
+              source_labels = ["__name__", "__keepme"]
+              separator     = "@"
+              regex         = "container_fs_.*@"
+              action        = "drop"
+            }
+            rule {
+              source_labels = ["__name__"]
+              regex         = "container_fs_.*"
+              target_label  = "__keepme"
+              replacement   = ""
+            }
+            // Only keep network series for real interfaces, not every veth pair k3s creates per pod
+            rule {
+              source_labels = ["__name__", "interface"]
+              separator     = "@"
+              regex         = "container_network_.*@(en[ospx][0-9].*|wlan[0-9].*|eth[0-9].*)"
+              target_label  = "__keepme"
+              replacement   = "1"
+            }
+            rule {
+              source_labels = ["__name__", "__keepme"]
+              separator     = "@"
+              regex         = "container_network_.*@"
+              action        = "drop"
+            }
+            rule {
+              source_labels = ["__name__"]
+              regex         = "container_network_.*"
+              target_label  = "__keepme"
+              replacement   = ""
+            }
+
+            forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+          }
+
+          // Same as above, for kubelet. Source: allowLists/kubelet.yaml in the same repo.
+          prometheus.relabel "kubelet_filter" {
+            max_cache_size = 100000
+
+            rule {
+              source_labels = ["__name__"]
+              regex         = "up|scrape_samples_scraped|go_goroutines|kubelet_certificate_manager_client_expiration_renew_errors|kubelet_certificate_manager_client_ttl_seconds|kubelet_certificate_manager_server_ttl_seconds|kubelet_cgroup_manager_duration_seconds_bucket|kubelet_cgroup_manager_duration_seconds_count|kubelet_node_config_error|kubelet_node_name|kubelet_pleg_relist_duration_seconds_bucket|kubelet_pleg_relist_duration_seconds_count|kubelet_pleg_relist_interval_seconds_bucket|kubelet_pod_start_duration_seconds_bucket|kubelet_pod_start_duration_seconds_count|kubelet_pod_worker_duration_seconds_bucket|kubelet_pod_worker_duration_seconds_count|kubelet_running_container_count|kubelet_running_containers|kubelet_running_pod_count|kubelet_running_pods|kubelet_runtime_operations_errors_total|kubelet_runtime_operations_total|kubelet_server_expiration_renew_errors|kubelet_volume_stats_available_bytes|kubelet_volume_stats_capacity_bytes|kubelet_volume_stats_inodes|kubelet_volume_stats_inodes_free|kubelet_volume_stats_inodes_used|kubelet_volume_stats_used_bytes|kubernetes_build_info|namespace_workload_pod|process_cpu_seconds_total|process_resident_memory_bytes|rest_client_requests_total|storage_operation_duration_seconds_count|storage_operation_errors_total|volume_manager_total_volumes"
+              action        = "keep"
             }
 
             forward_to = [prometheus.remote_write.grafana_cloud.receiver]
