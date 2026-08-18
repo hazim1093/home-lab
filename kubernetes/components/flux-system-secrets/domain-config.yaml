@@ -1,28 +1,37 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: domain-config
-  namespace: flux-system
+    name: domain-config
+    namespace: flux-system
 type: Opaque
 # Base domain (e.g., "example.com")
 # Local subdomain (e.g., "local.example.com")
 # Email for Let's Encrypt ACME registration
 stringData:
-  BASE_DOMAIN: ENC[AES256_GCM,data:vwI0+sAgQ5aDAaQ=,iv:6UgwuR9ufRaCevEa5jY/fKyj2rCkWCMpdsIjrhXfAKY=,tag:rxP1bgXaCj7OCiRXQ4yBKg==,type:str]
-  LOCAL_DOMAIN: ENC[AES256_GCM,data:SXQR9M+2MvOatshvuGFJVy0=,iv:G7Cj2lhYkBuuG/LCi4L+Msi/JUYGXkYqYAH1OG7ahYc=,tag:7YJZW7lW52bj1jV3Gj1QGQ==,type:str]
-  ACME_EMAIL: ENC[AES256_GCM,data:zu2vRVXynLl7yktPFYyghVX8fA==,iv:AOUxu3XQkVSTQPR79gEjEmH7lB4aqtelBoQE4eAMBTQ=,tag:Go0r2e0VdpoRPpyV0MGnnA==,type:str]
+    BASE_DOMAIN: ENC[AES256_GCM,data:vwI0+sAgQ5aDAaQ=,iv:6UgwuR9ufRaCevEa5jY/fKyj2rCkWCMpdsIjrhXfAKY=,tag:rxP1bgXaCj7OCiRXQ4yBKg==,type:str]
+    LOCAL_DOMAIN: ENC[AES256_GCM,data:SXQR9M+2MvOatshvuGFJVy0=,iv:G7Cj2lhYkBuuG/LCi4L+Msi/JUYGXkYqYAH1OG7ahYc=,tag:7YJZW7lW52bj1jV3Gj1QGQ==,type:str]
+    ACME_EMAIL: ENC[AES256_GCM,data:zu2vRVXynLl7yktPFYyghVX8fA==,iv:AOUxu3XQkVSTQPR79gEjEmH7lB4aqtelBoQE4eAMBTQ=,tag:Go0r2e0VdpoRPpyV0MGnnA==,type:str]
 sops:
-  age:
-  - recipient: age1s84t0ws8cpp8ujf8mny373gg63g9d52fezrdwe24jdfe4d309pwqvawpcu
-    enc: |
-      -----BEGIN AGE ENCRYPTED FILE-----
-      YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBKQlFtVDQ3K3hWeXVvZFVh
-      T0ljUERyaUJzbFNwVVhicUs3SnR1TzdrWDBBCnkvMVZPTW1UVFJoOVA4MzRDd2xs
-      SVd3emRtazRiWndiRUNtb2sxeGNpZTgKLS0tIFEyUEFmcUM3b1V1ZWY1anVlZTB5
-      QWs1QUlkV2E0Qzh6R0liOVFURXQ5T1kK3YEjHiF837mKq+wAiI0NcyQqQ53VuSA7
-      HXqIaWrmr0nI5MOtKsBvkuzoQx+LpCM0AE0bKm/3iH5bror9zxg5xg==
-      -----END AGE ENCRYPTED FILE-----
-  lastmodified: "2026-01-10T01:09:47Z"
-  mac: ENC[AES256_GCM,data:umqgkD6CldUvrWvDW1f6UvcVcmtkfPaq1FAUOd2Tsw2DWpTKOJ38VV6Pzx7xP18DhT9pEuVDYAQPWabVIdTEQS9FUkWx4Guixryk2ADdgyRg11mW9rC/29KQQTctEmAiJvPWpoiDwTNugGblgzVULc6d7wMx1GoKiP5GurkJ4+M=,iv:2t4S588KjqjGeDwRAAjg3jh03CwLEURG1GGW2yxx/ek=,tag:8OvFm+E4m+zAUMPDJ9sPCQ==,type:str]
-  encrypted_regex: ^(data|stringData)$
-  version: 3.11.0
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBjbFMzMEUyV3d3ZStuZjRD
+            UWd6OUJMek1YTWI5Z2t3RkJxNlFEaUxDS0NrCkE3aDBnNU5FM1lHTzlDT3NJSDRu
+            UTQyMnZSZ2xsU2M2SlFkSWVIWUdGWGsKLS0tIDZzYnNiK3plMjE5d0NXUzhHYXFw
+            L3RrVGVHK1dyS1FwR3FqS2l0NmIvVTQKwKN16ua1PKz6OgFwUorqU68xcJ4fa7t+
+            MS2xdx81HKMJ3gSUMN/P2qKRZ6JgSLJFyOhT6Sh/v9UHO2s7f2F1Gw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1s84t0ws8cpp8ujf8mny373gg63g9d52fezrdwe24jdfe4d309pwqvawpcu
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBwOTdlY1pSUVVZMk02alJN
+            enpaVDVPbTkzUFh6RDBjTFhGT0pGVWlSOUFJClBxOHBza2VKMlc5OUpVUXNoTlhv
+            YXlWVk85eVRSaDVMVUFEcm9SOEdzWFkKLS0tIDRQTllqNnV6WUpjTXhLSjZKbHJz
+            OFhaYThsTWUzNTBqRW9RQSsrL096Nm8KzWw9pSEr6ubKb4pdrH54RWP+Nyz0upYA
+            GLQKmj59WUmnwcjrYKAznuv72RYYHEMIeBdt9OXDeEf2/9rlQaWbKQ==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1470xftejp68uy54dn9vxwhnyuhgvpmf533nmn3mfya7uz558u3ls6v0r79
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-01-10T01:09:47Z"
+    mac: ENC[AES256_GCM,data:umqgkD6CldUvrWvDW1f6UvcVcmtkfPaq1FAUOd2Tsw2DWpTKOJ38VV6Pzx7xP18DhT9pEuVDYAQPWabVIdTEQS9FUkWx4Guixryk2ADdgyRg11mW9rC/29KQQTctEmAiJvPWpoiDwTNugGblgzVULc6d7wMx1GoKiP5GurkJ4+M=,iv:2t4S588KjqjGeDwRAAjg3jh03CwLEURG1GGW2yxx/ek=,tag:8OvFm+E4m+zAUMPDJ9sPCQ==,type:str]
+    version: 3.11.0
