@@ -27,6 +27,9 @@ spec:
           value: "0.0.0.0"
         - name: PORT
           value: "3000"
+        - name: HERMES_HOME
+          # Session store lives here — persisted on the workspace-data PVC
+          value: /home/workspace/.hermes
         - name: HERMES_API_URL
           value: http://hermes-gateway.hermes.svc.cluster.local:8642
         - name: HERMES_DASHBOARD_URL
@@ -48,6 +51,9 @@ spec:
         ports:
         - containerPort: 3000
           name: workspace
+        volumeMounts:
+        - name: workspace-data
+          mountPath: /home/workspace/.hermes
         resources:
           requests:
             memory: 128Mi
@@ -55,3 +61,7 @@ spec:
           limits:
             memory: 512Mi
             cpu: 500m
+      volumes:
+      - name: workspace-data
+        persistentVolumeClaim:
+          claimName: hermes-workspace-data
