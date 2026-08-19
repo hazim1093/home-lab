@@ -16,7 +16,10 @@
     ]
   },
   "flux": {
-    "managerFilePatterns": ["/^kubernetes\\/components\\/.+\\.yaml$/"]
+    "managerFilePatterns": ["/^kubernetes\\/components\\/.+\\.yaml$/"],
+    "ignorePaths": [
+      "kubernetes/components/flux-system/**"
+    ]
   },
   "helm-values": {
     "managerFilePatterns": ["/^kubernetes\\/components\\/.+\\.yaml$/"],
