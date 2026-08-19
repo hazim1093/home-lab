@@ -33,7 +33,10 @@ spec:
         - name: HERMES_API_URL
           value: http://hermes-gateway.hermes.svc.cluster.local:8642
         - name: HERMES_DASHBOARD_URL
-          value: http://hermes-dashboard.hermes.svc.cluster.local:9119
+          # Dead port on purpose: the workspace can't authenticate to the
+          # gated dashboard, so it must never reach it. Forces "portable"
+          # mode where it talks to the gateway with HERMES_API_TOKEN.
+          value: http://hermes-dashboard.hermes.svc.cluster.local:1
         - name: TRUST_PROXY
           value: "1"
         - name: VITE_HERMESWORLD_ENABLED
