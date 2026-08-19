@@ -15,10 +15,15 @@ spec:
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: hermes
-    # hermes-workspace talks to hermes-gateway/hermes-dashboard over ClusterDNS
+    # hermes-workspace talks to the hermes GATEWAY over ClusterDNS.
+    # Gateway-only: the workspace can only authenticate to the dashboard
+    # when dashboard auth is disabled, and ours is gated. Restrict to 8642,
+    # which it authenticates to via HERMES_API_TOKEN.
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: hermes-workspace
+      ports:
+      - port: 8642
     # Traefik proxies hermes.${LOCAL_DOMAIN} / hermes-api.${LOCAL_DOMAIN} here
     - namespaceSelector:
         matchLabels:
