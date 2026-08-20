@@ -2,7 +2,19 @@
 
 > **Purpose**: This document explains the home-lab repository structure, component organization, and deployment patterns to help you understand and extend the infrastructure.
 
+## Repository Visibility: PUBLIC
+
+**This repository is public.** Never commit or suggest committing any of the following in plaintext:
+
+- Real secrets, tokens, passwords, or API keys — these must always go through SOPS (`sops --encrypt --in-place ...`) before being committed, no exceptions, not even "temporarily"
+- The real home/public domain name, DDNS hostname, or ISP-assigned public IP — use `.lab` / placeholder domains and RFC1918 private IPs (`192.168.x.x` etc.) in examples, docs, and code
+- Personal email addresses, phone numbers, or other PII beyond what's already public via the GitHub account (git commit author identity)
+- Real values in planning docs, specs, or scratch files under `docs/` — use placeholders (`<PASTE_...>`, `REPLACE_WITH_...`) exactly like existing secret templates in this repo, never a real pasted-in value
+
+If asked to add DNS entries, secrets, or config referencing real infrastructure details, always default to placeholders/examples unless explicitly told the value is safe to publish.
+
 ## Table of Contents
+
 - [Repository Overview](#repository-overview)
 - [Directory Structure](#directory-structure)
 - [Component Architecture](#component-architecture)
