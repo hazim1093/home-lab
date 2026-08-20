@@ -111,10 +111,11 @@ spec:
           mountPath: /opt/data
         resources:
           requests:
-            memory: 384Mi
+            memory: 512Mi
             cpu: 150m
           limits:
-            memory: 1536Mi
+            # was 1536Mi; raised after repeated whole-cgroup OOM kills
+            memory: 3072Mi
             cpu: 1500m
       volumes:
       - name: data
