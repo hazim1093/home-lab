@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - pvc.yaml
+  - tools-install-job.yaml
   - pull-secret.yaml
   - configmap.yaml
   - secret.yaml

@@ -27,73 +27,33 @@ spec:
       serviceAccountName: hermes-agent
       automountServiceAccountToken: true
       initContainers:
-      # Installs jq + kubectl + gh onto /opt/data/.local/bin, already on the
-      # image's PATH — no shell wrapper needed on the main containers.
-      # git/curl skipped: already in the base image. jq is the static
-      # release binary, not apt, to avoid needing its .so deps on PATH.
-      - name: install-tools
-        image: ghcr.io/hazim1093/hermes-agent
-        imagePullPolicy: IfNotPresent
-        securityContext:
-          runAsUser: 0
+      # Tool installation (kubectl, jq, gh, gcloud, tofu) happens in the
+      # standalone hermes-tools-install Job (tools-install-job.yaml), not
+      # here — that Job owns the network calls, retries independently via
+      # backoffLimit, and a broken download there no longer crash-loops the
+      # whole gateway+dashboard app. This just blocks until that Job's
+      # output shows up on the shared PVC, with no network calls of its own.
+      - name: wait-for-tools
+        image: busybox
         volumeMounts:
         - name: data
           mountPath: /opt/data
-        command: ["bash", "-c"]
+        command: ["sh", "-c"]
         args:
         - |
-          set -euo pipefail
+          set -eu
           BIN_DIR=/opt/data/.local/bin
-          MARKER="$BIN_DIR/.installed"
-          mkdir -p "$BIN_DIR"
-
-          # Base tools (kubectl, jq, gh) — one-time, marker-gated
-          if [ ! -f "$MARKER" ]; then
-            KUBECTL_VERSION="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
-            curl -fsSL -o "$BIN_DIR/kubectl" \
-              "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl"
-            chmod +x "$BIN_DIR/kubectl"
-
-            JQ_VERSION="jq-1.7.1"
-            curl -fsSL -o "$BIN_DIR/jq" \
-              "https://github.com/jqlang/jq/releases/download/$JQ_VERSION/jq-linux-amd64"
-            chmod +x "$BIN_DIR/jq"
-
-            GH_VERSION="2.97.0"
-            curl -fsSL "https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_amd64.tar.gz" \
-              | tar -xz -C /tmp "gh_${GH_VERSION}_linux_amd64/bin/gh"
-            mv "/tmp/gh_${GH_VERSION}_linux_amd64/bin/gh" "$BIN_DIR/gh"
-            chmod +x "$BIN_DIR/gh"
-
-            touch "$MARKER"
-          fi
-
-          # gcloud SDK — separate gate so existing PVCs (marker already set)
-          # still get it on the next rollout
-          if [ ! -x "$BIN_DIR/gcloud" ]; then
-            GCLOUD_VERSION="580.0.0"
-            curl -fsSL -o /tmp/gcloud.tar.gz \
-              "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-${GCLOUD_VERSION}-linux-x86_64.tar.gz"
-            tar -xzf /tmp/gcloud.tar.gz -C /opt/data/.local
-            for b in gcloud gsutil bq; do
-              ln -sf "/opt/data/.local/google-cloud-sdk/bin/$b" "$BIN_DIR/$b"
-            done
-            rm -f /tmp/gcloud.tar.gz
-          fi
-
-          # OpenTofu — same separate gate as gcloud (marker already set on
-          # existing PVCs; tofu is new)
-          if [ ! -x "$BIN_DIR/tofu" ]; then
-            TOFU_VERSION="1.12.6"
-            curl -fsSL -o /tmp/tofu.tar.gz \
-              "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_amd64.tar.gz"
-            tar -xzf /tmp/tofu.tar.gz -C "$BIN_DIR" tofu
-            chmod +x "$BIN_DIR/tofu"
-            rm -f /tmp/tofu.tar.gz
-          fi
-
-          chown -R 10000:10000 /opt/data/.local
-          echo "tools installed"
+          for i in $(seq 1 60); do
+            if [ -x "$BIN_DIR/kubectl" ] && [ -x "$BIN_DIR/jq" ] && [ -x "$BIN_DIR/gh" ] \
+              && [ -x "$BIN_DIR/gcloud" ] && [ -x "$BIN_DIR/tofu" ]; then
+              echo "tools present"
+              exit 0
+            fi
+            echo "waiting for hermes-tools-install job to finish ($i/60)..."
+            sleep 5
+          done
+          echo "timed out waiting for tools — check: kubectl -n hermes get jobs,pods -l app=hermes-tools-install" >&2
+          exit 1
       containers:
       # No `command:` override — keep the image's own ENTRYPOINT (s6 init)
       # intact and only set `args:`, same as upstream's docker-compose.yml.

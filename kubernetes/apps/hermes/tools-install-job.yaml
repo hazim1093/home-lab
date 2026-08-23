@@ -1,0 +1,92 @@
+# Bump the name suffix whenever this script/version changes: Job specs are
+# immutable, so Flux would error trying to patch an existing Job in place.
+# Old Jobs are pruned automatically (apps Kustomization has prune: true).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hermes-tools-install-1
+  namespace: hermes
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: hermes-tools-install
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      # Installs jq + kubectl + gh + gcloud + tofu onto /opt/data/.local/bin,
+      # already on the main image's PATH.
+      #
+      # No curly-brace bash variable expansion anywhere in this script:
+      # Flux's postBuild variable substitution rewrites any dollar-brace
+      # identifier pattern it finds in manifests under kubernetes/apps/,
+      # silently replacing undefined ones with an empty string. That
+      # previously turned versioned filenames into malformed ones (e.g. a
+      # gh tarball name losing its version segment) and broke every
+      # download with a 404. Use bare $VAR (safe when followed by a
+      # non-identifier char) or printf to build strings instead.
+      - name: install-tools
+        image: ghcr.io/hazim1093/hermes-agent
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: data
+          mountPath: /opt/data
+        command: ["bash", "-c"]
+        args:
+        - |
+          set -euo pipefail
+          BIN_DIR=/opt/data/.local/bin
+          MARKER="$BIN_DIR/.installed"
+          mkdir -p "$BIN_DIR"
+
+          if [ ! -f "$MARKER" ]; then
+            KUBECTL_VERSION="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
+            curl -fsSL -o "$BIN_DIR/kubectl" \
+              "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl"
+            chmod +x "$BIN_DIR/kubectl"
+
+            JQ_VERSION="jq-1.7.1"
+            curl -fsSL -o "$BIN_DIR/jq" \
+              "https://github.com/jqlang/jq/releases/download/$JQ_VERSION/jq-linux-amd64"
+            chmod +x "$BIN_DIR/jq"
+
+            GH_VERSION="2.97.0"
+            GH_DIR=$(printf 'gh_%s_linux_amd64' "$GH_VERSION")
+            GH_URL=$(printf 'https://github.com/cli/cli/releases/download/v%s/%s.tar.gz' "$GH_VERSION" "$GH_DIR")
+            curl -fsSL "$GH_URL" | tar -xz -C /tmp "$GH_DIR/bin/gh"
+            mv "/tmp/$GH_DIR/bin/gh" "$BIN_DIR/gh"
+            chmod +x "$BIN_DIR/gh"
+
+            touch "$MARKER"
+          fi
+
+          if [ ! -x "$BIN_DIR/gcloud" ]; then
+            GCLOUD_VERSION="580.0.0"
+            GCLOUD_URL=$(printf 'https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-%s-linux-x86_64.tar.gz' "$GCLOUD_VERSION")
+            curl -fsSL -o /tmp/gcloud.tar.gz "$GCLOUD_URL"
+            tar -xzf /tmp/gcloud.tar.gz -C /opt/data/.local
+            for b in gcloud gsutil bq; do
+              ln -sf "/opt/data/.local/google-cloud-sdk/bin/$b" "$BIN_DIR/$b"
+            done
+            rm -f /tmp/gcloud.tar.gz
+          fi
+
+          if [ ! -x "$BIN_DIR/tofu" ]; then
+            TOFU_VERSION="1.12.6"
+            TOFU_URL=$(printf 'https://github.com/opentofu/opentofu/releases/download/v%s/tofu_%s_linux_amd64.tar.gz' "$TOFU_VERSION" "$TOFU_VERSION")
+            curl -fsSL -o /tmp/tofu.tar.gz "$TOFU_URL"
+            tar -xzf /tmp/tofu.tar.gz -C "$BIN_DIR" tofu
+            chmod +x "$BIN_DIR/tofu"
+            rm -f /tmp/tofu.tar.gz
+          fi
+
+          chown -R 10000:10000 /opt/data/.local
+          echo "tools installed"
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: hermes-data
