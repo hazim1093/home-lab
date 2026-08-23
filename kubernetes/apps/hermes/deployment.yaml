@@ -27,6 +27,28 @@ spec:
       serviceAccountName: hermes-agent
       automountServiceAccountToken: true
       initContainers:
+      # Clears stale gateway_state.json so cont-init doesn't also start a conflicting profile-less gateway.
+      - name: stop-legacy-gateway
+        image: ghcr.io/hazim1093/hermes-agent
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: data
+          mountPath: /opt/data
+        command: ["sh", "-c"]
+        args:
+        - |
+          set -eu
+          ACTIVE_PROFILE_FILE=/opt/data/active_profile
+          STATE=/opt/data/gateway_state.json
+          if [ -s "$ACTIVE_PROFILE_FILE" ] && [ -f "$STATE" ]; then
+            ACTIVE_PROFILE=$(cat "$ACTIVE_PROFILE_FILE")
+            if [ "$ACTIVE_PROFILE" != "default" ]; then
+              echo "active profile is '$ACTIVE_PROFILE' — removing stale default-profile gateway_state.json"
+              rm -f "$STATE"
+            fi
+          fi
       # Tool installation (kubectl, jq, gh, gcloud, tofu) happens in the
       # standalone hermes-tools-install Job (tools-install-job.yaml), not
       # here — that Job owns the network calls, retries independently via

@@ -1,6 +1,4 @@
-# Bump the name suffix whenever this script/version changes: Job specs are
-# immutable, so Flux would error trying to patch an existing Job in place.
-# Old Jobs are pruned automatically (apps Kustomization has prune: true).
+# Bump the name suffix when this script changes; Job specs are immutable.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -16,17 +14,8 @@ spec:
     spec:
       restartPolicy: OnFailure
       containers:
-      # Installs jq + kubectl + gh + gcloud + tofu onto /opt/data/.local/bin,
-      # already on the main image's PATH.
-      #
-      # No curly-brace bash variable expansion anywhere in this script:
-      # Flux's postBuild variable substitution rewrites any dollar-brace
-      # identifier pattern it finds in manifests under kubernetes/apps/,
-      # silently replacing undefined ones with an empty string. That
-      # previously turned versioned filenames into malformed ones (e.g. a
-      # gh tarball name losing its version segment) and broke every
-      # download with a 404. Use bare $VAR (safe when followed by a
-      # non-identifier char) or printf to build strings instead.
+      # Use bare $VAR or printf, not ${VAR}: Flux's postBuild substitution
+      # blanks out any ${...} it doesn't recognize in kubernetes/apps/.
       - name: install-tools
         image: ghcr.io/hazim1093/hermes-agent
         imagePullPolicy: IfNotPresent
