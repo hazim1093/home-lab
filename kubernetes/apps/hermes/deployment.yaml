@@ -45,30 +45,43 @@ spec:
           set -euo pipefail
           BIN_DIR=/opt/data/.local/bin
           MARKER="$BIN_DIR/.installed"
-          if [ -f "$MARKER" ]; then
-            echo "tools already installed, skipping"
-            exit 0
-          fi
           mkdir -p "$BIN_DIR"
 
-          KUBECTL_VERSION="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
-          curl -fsSL -o "$BIN_DIR/kubectl" \
-            "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl"
-          chmod +x "$BIN_DIR/kubectl"
+          # Base tools (kubectl, jq, gh) — one-time, marker-gated
+          if [ ! -f "$MARKER" ]; then
+            KUBECTL_VERSION="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
+            curl -fsSL -o "$BIN_DIR/kubectl" \
+              "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl"
+            chmod +x "$BIN_DIR/kubectl"
 
-          JQ_VERSION="jq-1.7.1"
-          curl -fsSL -o "$BIN_DIR/jq" \
-            "https://github.com/jqlang/jq/releases/download/$JQ_VERSION/jq-linux-amd64"
-          chmod +x "$BIN_DIR/jq"
+            JQ_VERSION="jq-1.7.1"
+            curl -fsSL -o "$BIN_DIR/jq" \
+              "https://github.com/jqlang/jq/releases/download/$JQ_VERSION/jq-linux-amd64"
+            chmod +x "$BIN_DIR/jq"
 
-          GH_VERSION="2.97.0"
-          curl -fsSL "https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_amd64.tar.gz" \
-            | tar -xz -C /tmp "gh_${GH_VERSION}_linux_amd64/bin/gh"
-          mv "/tmp/gh_${GH_VERSION}_linux_amd64/bin/gh" "$BIN_DIR/gh"
-          chmod +x "$BIN_DIR/gh"
+            GH_VERSION="2.97.0"
+            curl -fsSL "https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_amd64.tar.gz" \
+              | tar -xz -C /tmp "gh_${GH_VERSION}_linux_amd64/bin/gh"
+            mv "/tmp/gh_${GH_VERSION}_linux_amd64/bin/gh" "$BIN_DIR/gh"
+            chmod +x "$BIN_DIR/gh"
+
+            touch "$MARKER"
+          fi
+
+          # gcloud SDK — separate gate so existing PVCs (marker already set)
+          # still get it on the next rollout
+          if [ ! -x "$BIN_DIR/gcloud" ]; then
+            GCLOUD_VERSION="580.0.0"
+            curl -fsSL -o /tmp/gcloud.tar.gz \
+              "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-${GCLOUD_VERSION}-linux-x86_64.tar.gz"
+            tar -xzf /tmp/gcloud.tar.gz -C /opt/data/.local
+            for b in gcloud gsutil bq; do
+              ln -sf "/opt/data/.local/google-cloud-sdk/bin/$b" "$BIN_DIR/$b"
+            done
+            rm -f /tmp/gcloud.tar.gz
+          fi
 
           chown -R 10000:10000 /opt/data/.local
-          touch "$MARKER"
           echo "tools installed"
       containers:
       # No `command:` override — keep the image's own ENTRYPOINT (s6 init)
