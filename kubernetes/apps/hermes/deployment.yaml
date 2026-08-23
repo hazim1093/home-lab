@@ -81,16 +81,6 @@ spec:
             rm -f /tmp/gcloud.tar.gz
           fi
 
-          # tofu (OpenTofu) — separate gate, same reason as gcloud
-          if [ ! -x "$BIN_DIR/tofu" ]; then
-            TOFU_VERSION="1.12.6"
-            curl -fsSL -o /tmp/tofu.tar.gz \
-              "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_amd64.tar.gz"
-            tar -xzf /tmp/tofu.tar.gz -C "$BIN_DIR" tofu
-            chmod +x "$BIN_DIR/tofu"
-            rm -f /tmp/tofu.tar.gz
-          fi
-
           # OpenTofu — same separate gate as gcloud (marker already set on
           # existing PVCs; tofu is new)
           if [ ! -x "$BIN_DIR/tofu" ]; then
