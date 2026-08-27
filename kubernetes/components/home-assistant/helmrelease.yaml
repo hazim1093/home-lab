@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: home-assistant
-      version: "0.3.36"
+      version: "0.3.75"
       sourceRef:
         kind: HelmRepository
         name: home-assistant
@@ -59,33 +59,7 @@ spec:
         image: busybox:1.37
         command:
           - sh
-          - -c
-          - |
-            # Create custom_components directory
-            mkdir -p /config/custom_components
-
-            # Read components list and install each
-            while IFS='|' read -r name url extract_to_subdir || [ -n "$name" ]; do
-              # Skip empty lines and comments
-              [ -z "$name" ] && continue
-              echo "$name" | grep -q '^#' && continue
-
-              if [ ! -d "/config/custom_components/$name" ]; then
-                echo "Installing $name..."
-                wget -qO /tmp/component.zip "$url"
-                if [ "$extract_to_subdir" = "true" ]; then
-                  # Extract to a subdirectory with the component name
-                  unzip -q /tmp/component.zip -d /config/custom_components/$name
-                else
-                  # Extract directly (zip contains folder structure)
-                  unzip -q /tmp/component.zip -d /config/custom_components/
-                fi
-                rm /tmp/component.zip
-                echo "$name installed"
-              else
-                echo "$name already installed"
-              fi
-            done < /custom-components/components.txt
+          - /custom-components/install.sh
         volumeMounts:
           - name: home-assistant
             mountPath: /config

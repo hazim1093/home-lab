@@ -19,5 +19,9 @@ data:
     script: !include scripts.yaml
     scene: !include scenes.yaml
 
+    # Core integrations, set up via the UI (no credentials in this public repo)
+    hue: {}
+    tuya: {}
+
     # Backups
     backup:

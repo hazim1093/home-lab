@@ -4,11 +4,119 @@ metadata:
   name: home-assistant-custom-components
   namespace: home-assistant
 data:
-  # Format: name|download_url|extract_to_subdir
-  # - name: directory name under custom_components
-  # - download_url: URL to download the zip file
-  # - extract_to_subdir: "true" if zip should extract to custom_components/name,
-  #                      "false" if zip already contains the folder structure
+  # Installer script run by the init container in helmrelease.yaml.
+  # Reads components.txt below and converges /config/custom_components
+  # to the declared versions on every pod start (re-extracts over the
+  # old files, so a version bump in the manifest applies on restart).
+  install.sh: |
+    #!/bin/sh
+    set -e
+
+    MANIFEST=/custom-components/components.txt
+    DEST=/config/custom_components
+
+    reset_block() {
+      name=
+      repo=
+      version=
+      asset=
+      archive=
+      extract_to_subdir=
+    }
+    reset_block
+
+    process_block() {
+      [ -n "$name" ] || return 0
+      echo ">>> Installing $name ($version)"
+      case "$archive" in
+        tar.gz)
+          url="https://github.com/$repo/archive/refs/tags/$version.tar.gz"
+          wget -q --tries=3 --timeout=30 -O /tmp/component.tar.gz "$url" || {
+            echo "ERROR: failed to download $url" >&2
+            exit 1
+          }
+          rm -rf /tmp/component-src "$DEST/$name"
+          mkdir -p /tmp/component-src
+          tar -xzf /tmp/component.tar.gz -C /tmp/component-src
+          cp -r /tmp/component-src/*/custom_components/$name "$DEST/"
+          rm -rf /tmp/component-src /tmp/component.tar.gz
+          ;;
+        zip)
+          url="https://github.com/$repo/releases/download/$version/$asset"
+          wget -q --tries=3 --timeout=30 -O /tmp/component.zip "$url" || {
+            echo "ERROR: failed to download $url" >&2
+            exit 1
+          }
+          rm -rf "$DEST/$name"
+          mkdir -p "$DEST/$name"
+          if [ "$extract_to_subdir" = "true" ]; then
+            # zip root holds the component files directly
+            unzip -q /tmp/component.zip -d "$DEST/$name"
+          else
+            # zip already contains custom_components/<name>/...
+            unzip -q /tmp/component.zip -d "$DEST"
+          fi
+          rm -f /tmp/component.zip
+          ;;
+        *)
+          echo "ERROR: unsupported archive type '$archive' for $name" >&2
+          exit 1
+          ;;
+      esac
+      echo ">>> $name installed"
+      reset_block
+    }
+
+    mkdir -p "$DEST"
+
+    while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in
+        ''|\#*) continue ;;
+        '---') process_block; continue ;;
+      esac
+      key="${line%%:*}"
+      value="${line#*: }"
+      # Strip the trailing renovate annotation and surrounding quotes
+      value="${value%% #*}"
+      value="${value%\"}"
+      value="${value#\"}"
+      case "$key" in
+        name) name="$value" ;;
+        repo) repo="$value" ;;
+        version) version="$value" ;;
+        asset) asset="$value" ;;
+        archive) archive="$value" ;;
+        extract_to_subdir) extract_to_subdir="$value" ;;
+      esac
+    done < "$MANIFEST"
+    process_block
+    echo "Custom components are up to date."
+
+  # Manifest of custom components to install into /config/custom_components.
+  # Format: `key: value` lines, `---` ends a block.
+  #   - repo:   GitHub owner/repository
+  #   - version: pinned release tag; the `# renovate:` annotation keeps it
+  #              current via Renovate (datasource: github-releases)
+  #   - asset:  zip asset name for zip releases (omit for source tarballs)
+  #   - archive: zip | tar.gz
+  #   - extract_to_subdir: zip only: true when the zip root holds the
+  #              component files, false when it contains custom_components/<name>/
   components.txt: |
-    hacs|https://github.com/hacs/integration/releases/latest/download/hacs.zip|true
-    xiaomi_miot|https://github.com/al-one/hass-xiaomi-miot/releases/latest/download/xiaomi_miot.zip|false
+    name: hacs
+    repo: hacs/integration
+    version: "2.0.5" # renovate: datasource=github-releases depName=hacs/integration
+    asset: hacs.zip
+    extract_to_subdir: true
+    archive: zip
+    ---
+    name: xiaomi_miot
+    repo: al-one/hass-xiaomi-miot
+    version: "v1.1.4" # renovate: datasource=github-releases depName=al-one/hass-xiaomi-miot
+    asset: xiaomi_miot.zip
+    extract_to_subdir: true
+    archive: zip
+    ---
+    name: localtuya
+    repo: xZetsubou/hass-localtuya
+    version: "2026.7.0" # renovate: datasource=github-releases depName=xZetsubou/hass-localtuya
+    archive: tar.gz
