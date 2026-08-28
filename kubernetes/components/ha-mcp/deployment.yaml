@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ha-mcp
+  namespace: ha-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ha-mcp
+  template:
+    metadata:
+      labels:
+        app: ha-mcp
+    spec:
+      containers:
+        - name: ha-mcp
+          image: ghcr.io/homeassistant-ai/ha-mcp:8.3.0
+          # HTTP transport (fastmcp-http.json): port 8086, path /mcp
+          args: ["ha-mcp-web"]
+          env:
+            - name: HOMEASSISTANT_URL
+              value: http://home-assistant.home-assistant.svc.cluster.local:8123
+            - name: HOMEASSISTANT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ha-mcp-env
+                  key: HOMEASSISTANT_TOKEN
+            - name: MCP_HEALTHZ
+              # /healthz is opt-in; the readiness probe depends on it
+              value: "true"
+            - name: MCP_SECRET_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: ha-mcp-env
+                  key: MCP_SECRET_PATH
+          ports:
+            - name: mcp
+              containerPort: 8086
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: mcp
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            # Persists tool config / feature flags / OAuth registrations
+            - name: data
+              mountPath: /home/mcpuser/.ha-mcp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: ha-mcp-data
