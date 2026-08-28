@@ -11,6 +11,7 @@ resources:
 - certificates.yaml
 - traefik.yaml
 - home-assistant.yaml
+- ha-mcp.yaml
 - pihole.yaml
 - rustdesk.yaml
 - renovate.yaml
