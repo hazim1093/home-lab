@@ -31,6 +31,17 @@
       "matchStrings": [
         "version:\\s+\"(?<currentValue>.+?)\"\\s+# renovate: datasource=(?<datasource>.+?) depName=(?<depName>.+?)(?: versioning=(?<versioning>.+?))?\\s"
       ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^kubernetes\\/components\\/home-assistant\\/custom-components\\.yaml$/"
+      ],
+      "datasourceTemplate": "github-releases",
+      "matchStrings": [
+        "github\\.com/(?<depName>[^|]+?)/releases/download/(?<currentValue>[^/|]+)/[^/|]+\\.zip",
+        "github\\.com/(?<depName>[^|]+?)/archive/refs/tags/(?<currentValue>[^/|]+)\\.zip"
+      ]
     }
   ],
   "packageRules": [

@@ -4,11 +4,11 @@ metadata:
   name: home-assistant-custom-components
   namespace: home-assistant
 data:
-  # Format: name|download_url|extract_to_subdir
-  # - name: directory name under custom_components
-  # - download_url: URL to download the zip file
-  # - extract_to_subdir: "true" if zip should extract to custom_components/name,
-  #                      "false" if zip already contains the folder structure
+  # Declarative custom component installs, applied by the helmrelease init
+  # container on pod start. Format: name|download_url
+  # Versions are pinned (never "latest") and bumped by Renovate (regex manager
+  # in renovate.json); a pod restart applies the new version.
   components.txt: |
-    hacs|https://github.com/hacs/integration/releases/latest/download/hacs.zip|true
-    xiaomi_miot|https://github.com/al-one/hass-xiaomi-miot/releases/latest/download/xiaomi_miot.zip|false
+    hacs|https://github.com/hacs/integration/releases/download/2.0.5/hacs.zip
+    xiaomi_miot|https://github.com/al-one/hass-xiaomi-miot/releases/download/v1.1.4/xiaomi_miot.zip
+    localtuya|https://github.com/xZetsubou/hass-localtuya/archive/refs/tags/2026.7.0.zip
