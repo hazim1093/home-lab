@@ -7,14 +7,8 @@ data:
   configuration.yaml: |
     default_config:
 
-    http:
-      use_x_forwarded_for: true
-      trusted_proxies:
-        - 10.0.0.0/8
-        - 172.16.0.0/12
-        - 192.168.0.0/16
-        - 127.0.0.0/8
-
+    # HTTP settings (use_x_forwarded_for / trusted_proxies) are managed in
+    # the UI: Settings > System > Network (YAML config deprecated since 2025.1)
     automation: !include automations.yaml
     script: !include scripts.yaml
     scene: !include scenes.yaml
