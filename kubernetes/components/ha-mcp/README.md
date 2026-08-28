@@ -20,14 +20,14 @@ Save, commit the re-encrypted file, merge. The pod won't talk to HA until the to
 | Client | URL |
 |---|---|
 | Hermes (in-cluster) | `http://ha-mcp.ha-mcp.svc.cluster.local:8086<MCP_SECRET_PATH>` |
-| Your PC (local domain) | `http://mcp.<LOCAL_DOMAIN><MCP_SECRET_PATH>` |
+| Your PC (local domain) | `http://ha-mcp.<LOCAL_DOMAIN><MCP_SECRET_PATH>` |
 
 ## Client setup
 
 Claude Code (on your PC):
 
 ```bash
-claude mcp add --transport http ha-mcp "http://mcp.<LOCAL_DOMAIN>/private_<random>"
+claude mcp add --transport http ha-mcp "http://ha-mcp.<LOCAL_DOMAIN>/private_<random>"
 ```
 
 Hermes:

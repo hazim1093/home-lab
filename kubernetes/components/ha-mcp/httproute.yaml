@@ -15,7 +15,7 @@ spec:
   - name: traefik-gateway
     namespace: traefik
   hostnames:
-  - "mcp.${LOCAL_DOMAIN}"
+  - "ha-mcp.${LOCAL_DOMAIN}"
   rules:
   - matches:
     - path:
