@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: ha-mcp
-          image: ghcr.io/homeassistant-ai/ha-mcp:4.12.0
+          image: ghcr.io/homeassistant-ai/ha-mcp:8.3.0
           # HTTP transport (fastmcp-http.json): port 8086, path /mcp
           args: ["ha-mcp-web"]
           env:
@@ -29,6 +29,12 @@ spec:
           ports:
             - name: mcp
               containerPort: 8086
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: mcp
+            initialDelaySeconds: 10
+            periodSeconds: 10
           volumeMounts:
             # Persists tool config / feature flags / OAuth registrations
             - name: data
