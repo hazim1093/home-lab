@@ -86,6 +86,18 @@ jobs:
         run: |
           kustomize build "kubernetes/components/${{ matrix.component }}" > /tmp/built.yaml
 
+      - name: Substitute Flux postBuild placeholders
+        run: |
+          # kubeconform validates raw manifests, but Flux substitutes these
+          # placeholders at apply time (from the domain-config secret), so
+          # validate with placeholder values of the same shape
+          sed -i \
+            -e 's/\${LOCAL_DOMAIN}/example.lab/g' \
+            -e 's/\${BASE_DOMAIN}/example.lab/g' \
+            -e 's/\${ACME_EMAIL}/admin@example.lab/g' \
+            -e 's|\${SLACK_WEBHOOK_URL}|https://hooks.example.lab/webhook|g' \
+            /tmp/built.yaml
+
       - name: Kubeconform
         env:
           KUBERNETES_VERSION: ${{ env.KUBERNETES_VERSION }}

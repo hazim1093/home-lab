@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: home-assistant
-      version: "0.3.36"
+      version: "0.3.75"
       sourceRef:
         kind: HelmRepository
         name: home-assistant
@@ -34,7 +34,7 @@ spec:
         subPath: configuration.yaml
     initContainers:
       - name: create-config-files
-        image: busybox:1.37
+        image: busybox:1.38
         command:
           - sh
           - -c
@@ -56,35 +56,54 @@ spec:
           - name: home-assistant
             mountPath: /config
       - name: install-custom-components
-        image: busybox:1.37
+        image: busybox:1.38
         command:
           - sh
           - -c
           - |
-            # Create custom_components directory
+            set -e
             mkdir -p /config/custom_components
 
-            # Read components list and install each
-            while IFS='|' read -r name url extract_to_subdir || [ -n "$name" ]; do
-              # Skip empty lines and comments
-              [ -z "$name" ] && continue
-              echo "$name" | grep -q '^#' && continue
+            # custom_components must only contain component dirs - clean up
+            # stray files left by the old flat extraction
+            find /config/custom_components -maxdepth 1 -type f -delete
 
-              if [ ! -d "/config/custom_components/$name" ]; then
-                echo "Installing $name..."
-                wget -qO /tmp/component.zip "$url"
-                if [ "$extract_to_subdir" = "true" ]; then
-                  # Extract to a subdirectory with the component name
-                  unzip -q /tmp/component.zip -d /config/custom_components/$name
-                else
-                  # Extract directly (zip contains folder structure)
-                  unzip -q /tmp/component.zip -d /config/custom_components/
-                fi
-                rm /tmp/component.zip
-                echo "$name installed"
-              else
-                echo "$name already installed"
+            while IFS='|' read -r name url || [ -n "$name" ]; do
+              if [ -z "$name" ]; then
+                continue
               fi
+              case "$name" in \#*) continue ;; esac
+
+              # Trim whitespace (block scalar indent / stray spaces)
+              name=$(printf '%s' "$name" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+              url=$(printf '%s' "$url" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+              [ -z "$name" ] && continue
+
+              echo "Installing $name..."
+              wget -qO /tmp/component.zip "$url"
+              rm -rf /tmp/extract
+              mkdir -p /tmp/extract
+              unzip -q /tmp/component.zip -d /tmp/extract
+
+              # Locate the component dir: flat zips keep files at the archive
+              # root (manifest.json), source archives nest it under
+              # custom_components/<name> (possibly in a wrapper folder)
+              if [ -f /tmp/extract/manifest.json ]; then
+                src=/tmp/extract
+              else
+                src=$(find /tmp/extract -type d -path "*/custom_components/$name" | head -1)
+                if [ -z "$src" ]; then
+                  echo "ERROR: could not locate component '$name' in archive"
+                  exit 1
+                fi
+              fi
+
+              # Overwrite so a version bump in the manifest applies on next start
+              rm -rf "/config/custom_components/$name"
+              mkdir -p "/config/custom_components/$name"
+              cp -r "$src"/. "/config/custom_components/$name/"
+              rm -rf /tmp/extract /tmp/component.zip
+              echo "$name installed"
             done < /custom-components/components.txt
         volumeMounts:
           - name: home-assistant
