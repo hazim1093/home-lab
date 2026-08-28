@@ -26,6 +26,9 @@ spec:
                 secretKeyRef:
                   name: ha-mcp-env
                   key: HOMEASSISTANT_TOKEN
+            - name: MCP_HEALTHZ
+              # /healthz is opt-in; the readiness probe depends on it
+              value: "true"
           ports:
             - name: mcp
               containerPort: 8086
