@@ -29,6 +29,11 @@ spec:
             - name: MCP_HEALTHZ
               # /healthz is opt-in; the readiness probe depends on it
               value: "true"
+            - name: MCP_SECRET_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: ha-mcp-env
+                  key: MCP_SECRET_PATH
           ports:
             - name: mcp
               containerPort: 8086
