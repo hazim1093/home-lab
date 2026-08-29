@@ -13,3 +13,4 @@ data:
     xiaomi_miot|https://github.com/al-one/hass-xiaomi-miot/releases/download/v1.1.4/xiaomi_miot.zip
     localtuya|https://github.com/xZetsubou/hass-localtuya/archive/refs/tags/2026.7.0.zip
     s3_compatible|https://github.com/PhantomPhoton/S3-Compatible/archive/refs/tags/v.2.1.2.zip
+    homeconnect_ws|https://github.com/chris-mc1/homeconnect_local_hass/releases/download/1.0.5b11/homeconnect_ws.zip
