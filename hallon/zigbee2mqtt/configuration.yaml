@@ -1,7 +1,8 @@
 # Zigbee2MQTT configuration
 # Home Assistant integration available at: http://<your-home-assistant>:8123
 
-homeassistant: true
+homeassistant:
+  enabled: true
 
 # MQTT broker connection
 mqtt:
@@ -27,11 +28,6 @@ advanced:
   pan_id: GENERATE
   network_key: GENERATE
   channel: 11
-
-  # Homeassistant integration
-  homeassistant_legacy_entity_attributes: false
-  legacy_api: false
-  legacy_availability_payload: false
 
 # Device options
 device_options:
