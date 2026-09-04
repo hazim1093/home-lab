@@ -13,9 +13,9 @@ data:
     script: !include scripts.yaml
     scene: !include scenes.yaml
 
-    # Themes installed via HACS (e.g. Mushroom Themes)
+    # Themes installed via HACS land in /config/themes/<name>/ (nested)
     frontend:
-      themes: !include_dir_merge_named themes
+      themes: !include_dir_merge_named themes/mushroom
 
     # Backups
     backup:
