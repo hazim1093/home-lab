@@ -36,6 +36,17 @@ device_options:
 # Join is enabled on-demand via the frontend/MQTT, not permanently open
 permit_join: false
 
+# Pin friendly names so they survive Z2M migrations (2.14 upgrade wiped the names DB)
+devices:
+  "0x00178801082645a3":
+    friendly_name: Philips Hue 1
+  "0x0017880106b22a9d":
+    friendly_name: Philips Hue 2
+  "0x0017880108088569":
+    friendly_name: Philips Dimmer 1
+  "0xa4c13853dddb2a11":
+    friendly_name: Soil Sensor
+
 # Optional: Network map
 #map_options:
 #  graphviz:
