@@ -18,8 +18,10 @@ service-cidr: "10.43.0.0/16"
 
 # Kubelet configuration
 # Enable metrics for kubectl top
-# kubelet-arg:
-#   - "resolv-conf=/etc/resolv.conf"
+# Point CoreDNS upstream at Pi-hole so .lab / ${LOCAL_DOMAIN} records resolve from pods.
+# Requires /etc/rancher/k3s/resolv.conf on the node with "nameserver 192.168.0.201".
+kubelet-arg:
+  - "resolv-conf=/etc/rancher/k3s/resolv.conf"
 
 # TLS settings
 # Use system certificates

@@ -73,6 +73,8 @@ spec:
       customDnsEntries:
       - address=/rustdesk.lab/192.168.0.203
       - address=/mqtt.lab/192.168.0.202
+      # Bosch dishwasher Home Connect Local: integration connects to its profile hostname
+      - address=/bosch-dishwasher-012060522931003141/192.168.0.84
 
     # unbound
     extraVolumes:
