@@ -110,3 +110,19 @@ spec:
             mountPath: /config
           - name: custom-components
             mountPath: /custom-components
+
+  # Pin the dishwasher's Home Connect Local hostname to its IP at pod level
+  # (no mDNS in k8s; chart lacks a hostAliases value, hence this patch)
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: StatefulSet
+              name: home-assistant
+            patch: |-
+              - op: add
+                path: /spec/template/spec/hostAliases
+                value:
+                  - ip: 192.168.0.84
+                    hostnames:
+                      - bosch-dishwasher-012060522931003141
