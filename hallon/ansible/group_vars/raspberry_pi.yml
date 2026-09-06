@@ -6,5 +6,12 @@ mosquitto_port: 1883
 zigbee2mqtt_version: 2.14.0
 zigbee_device: /dev/ttyACM0  # ConBee USB device
 
+# Zigbee network identity (2026-09). These MUST match the coordinator's
+# existing network or all paired devices get orphaned.
+z2m_pan_id: 39632
+# The network key stays out of git: put the 16-byte list in
+# ansible/group_vars/all/z2m.local.yml (gitignored) as:
+#   z2m_network_key: [<n1>, <n2>, ..., <n16>]
+
 # Network configuration
 timezone: Europe/Stockholm  # Change to your timezone
