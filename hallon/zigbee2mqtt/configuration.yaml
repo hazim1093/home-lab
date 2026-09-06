@@ -25,8 +25,10 @@ frontend:
 # Advanced settings
 advanced:
   log_level: info
-  pan_id: GENERATE
-  network_key: GENERATE
+  # Pinned to the existing network (2026-09). NEVER leave these as GENERATE:
+  # re-generating orphans every paired device.
+  pan_id: {{ z2m_pan_id }}
+  network_key: {{ z2m_network_key }}
   channel: 11
 
 # Device options
