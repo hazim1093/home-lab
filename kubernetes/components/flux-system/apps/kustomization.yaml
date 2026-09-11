@@ -28,5 +28,6 @@ resources:
 - homer-operator.yaml
 - homer.yaml
 - hajimari.yaml
+- homarr.yaml
 - private-apps.yaml
 - apps.yaml

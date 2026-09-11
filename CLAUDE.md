@@ -74,6 +74,7 @@ home-lab/
 │       ├── homer-operator/          # Homer dashboard operator (HTTPRoute discovery)
 │       ├── homer/                   # Homer dashboard (auto-discovered services)
 │       ├── hajimari/                # Hajimari dashboard (static app list)
+│       ├── homarr/                  # Homarr dashboard + HTTPRoute app sync
 │       ├── external-dns/            # Automatic DNS management
 │       └── renovate/                # Dependency updates
 ├── hallon/                          # Raspberry Pi management

@@ -1,0 +1,80 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: homarr-httproute-sync
+  namespace: homarr
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 180
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: homarr-httproute-sync
+        spec:
+          restartPolicy: Never
+          serviceAccountName: homarr-httproute-sync
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+          - name: sync
+            image: python:3.13-alpine
+            command:
+            - python
+            - /scripts/sync.py
+            env:
+            - name: HOMARR_URL
+              value: "http://homarr.homarr.svc.cluster.local:7575"
+            - name: HOMARR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: homarr-secrets
+                  key: api-key
+            - name: DRY_RUN
+              value: "false"
+            # Creates a board item for apps the sync just created; existing
+            # items are never touched (no moves, no duplicates).
+            - name: PLACE_ITEMS
+              value: "true"
+            # Board to place new items on; empty = first board.
+            - name: BOARD_NAME
+              value: ""
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                cpu: 100m
+                memory: 128Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+          volumes:
+          - name: scripts
+            configMap:
+              name: homarr-httproute-sync
+              defaultMode: 0555
+          - name: tmp
+            emptyDir: {}
