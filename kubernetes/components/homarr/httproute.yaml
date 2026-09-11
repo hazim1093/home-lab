@@ -10,11 +10,9 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
-    item.homer.rajsingh.info/name: "Homarr"
-    item.homer.rajsingh.info/icon: "fas fa-table-cells"
-    item.homer.rajsingh.info/subtitle: "integrations, drag and drop"
-    service.homer.rajsingh.info/name: "Dashboards"
-    service.homer.rajsingh.info/icon: "fas fa-tachometer-alt"
+    homarr.synced/name: "Homarr"
+    homarr.synced/icon: "homarr"
+    homarr.synced/description: "integrations, drag and drop"
 spec:
   parentRefs:
   - name: traefik-gateway

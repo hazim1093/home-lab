@@ -35,14 +35,11 @@ data:
     K8S = "https://kubernetes.default.svc"
     ROUTES_API = "/apis/gateway.networking.k8s.io/v1/httproutes"
 
-    # Reuse the annotations this lab already puts on HTTPRoutes.
     A_NAME = "homarr.synced/name"
     A_ICON = "homarr.synced/icon"
     A_DESC = "homarr.synced/description"
     A_ENABLED = "homarr.synced/enabled"
-    F_NAME = "item.homer.rajsingh.info/name"
-    F_DESC = "item.homer.rajsingh.info/subtitle"
-    F_ENDPOINT = "gatus.home-operations.com/endpoint"
+    GATUS_ENDPOINT = "gatus.home-operations.com/endpoint"
 
 
     class HomarrError(Exception):
@@ -113,7 +110,7 @@ data:
     def in_cluster_url(route):
         """Ping target: prefer the in-cluster URL gatus already knows about
         (no TLS trust issues from inside the cluster)."""
-        block = annotation(route["metadata"], F_ENDPOINT)
+        block = annotation(route["metadata"], GATUS_ENDPOINT)
         match = re.search(r'url:\s*"?([^"\s]+)"?', block)
         return match.group(1) if match else None
 
@@ -127,8 +124,8 @@ data:
                 continue
             if annotation(meta, A_ENABLED).lower() in ("false", "no", "0", "off"):
                 continue
-            name = annotation(meta, A_NAME) or annotation(meta, F_NAME) or meta["name"]
-            description = annotation(meta, A_DESC) or annotation(meta, F_DESC) or f"httproute {meta['namespace']}/{meta['name']}"
+            name = annotation(meta, A_NAME) or meta["name"]
+            description = annotation(meta, A_DESC) or f"httproute {meta['namespace']}/{meta['name']}"
             href = f"https://{hosts[0]}"
             out.append({
                 "name": name,

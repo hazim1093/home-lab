@@ -10,10 +10,8 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
-    item.homer.rajsingh.info/name: "Gatus"
-    item.homer.rajsingh.info/icon: "fas fa-heartbeat"
-    service.homer.rajsingh.info/name: "Infrastructure"
-    service.homer.rajsingh.info/icon: "fas fa-server"
+    homarr.synced/name: "Gatus"
+    homarr.synced/icon: "gatus"
 spec:
   parentRefs:
   - name: traefik-gateway
