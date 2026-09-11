@@ -10,6 +10,8 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
+    # URL-path auth only; not a browsable app.
+    item.homer.rajsingh.info/hide: "true"
 spec:
   parentRefs:
   - name: traefik-gateway
