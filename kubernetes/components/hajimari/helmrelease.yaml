@@ -64,10 +64,6 @@ spec:
               url: "https://homarr.${LOCAL_DOMAIN}"
               icon: mdi:view-grid
               info: "integrations, drag and drop"
-            - name: Homer
-              url: "https://homer.${LOCAL_DOMAIN}"
-              icon: mdi:view-dashboard
-              info: "homer-operator (auto-discovers HTTPRoutes)"
         - group: Home
           apps:
             - name: Home Assistant

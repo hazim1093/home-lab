@@ -10,11 +10,9 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
-    item.homer.rajsingh.info/name: "Hajimari"
-    item.homer.rajsingh.info/icon: "fas fa-sun"
-    item.homer.rajsingh.info/subtitle: "static app list"
-    service.homer.rajsingh.info/name: "Dashboards"
-    service.homer.rajsingh.info/icon: "fas fa-tachometer-alt"
+    homarr.synced/name: "Hajimari"
+    homarr.synced/icon: "startpage"
+    homarr.synced/description: "static app list"
 spec:
   parentRefs:
   - name: traefik-gateway

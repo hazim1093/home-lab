@@ -1,7 +1,7 @@
 # Hajimari
 
 [Hajimari](https://github.com/toboshii/hajimari) start page, at `https://hajimari.<LOCAL_DOMAIN>`.
-Second dashboard, kept next to `kubernetes/components/homer/` for comparison.
+Second dashboard next to `kubernetes/components/homarr/`, kept for comparison.
 
 **Known limitation:** upstream Hajimari (v0.3.1, last release Oct 2022) only discovers `Ingress`
 objects — Gateway API support is an open issue (toboshii/hajimari#163) and the PR adding HTTPRoute

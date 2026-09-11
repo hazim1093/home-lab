@@ -16,13 +16,13 @@ has an app in Homarr, matched on the app URL:
 - a newly created app is placed on a board once (first board, or `BOARD_NAME`); if placement fails it is
   logged and the app just needs one manual drag. Existing items are never moved, so no duplicates
 
-Per-route annotations (all optional; `homarr.synced/*` wins, otherwise the Homer annotations are reused):
+Per-route annotations (all optional):
 
 | Annotation | Effect |
 |---|---|
-| `homarr.synced/name` | app title (falls back to `item.homer.rajsingh.info/name`, then the route name) |
+| `homarr.synced/name` | app title (defaults to the route name) |
 | `homarr.synced/icon` | [dashboard-icons](https://github.com/homarr-labs/dashboard-icons) slug, e.g. `home-assistant`, or a full URL |
-| `homarr.synced/description` | subtitle (falls back to `item.homer.rajsingh.info/subtitle`) |
+| `homarr.synced/description` | subtitle (defaults to `<namespace>/<route>`) |
 | `homarr.synced/enabled` | `"false"` keeps the route out of Homarr |
 
 ## First-time setup (once)
