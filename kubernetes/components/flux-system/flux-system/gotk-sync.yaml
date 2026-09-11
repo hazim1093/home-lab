@@ -21,7 +21,8 @@ metadata:
 spec:
   interval: 10m0s
   path: ./kubernetes/components/flux-system
-  prune: false
+  # true: manifests deleted from this path are also deleted from the cluster
+  prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
