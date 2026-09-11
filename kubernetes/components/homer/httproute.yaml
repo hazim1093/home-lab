@@ -1,0 +1,33 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: homer
+  namespace: homer
+  annotations:
+    gatus.home-operations.com/enabled: "true"
+    gatus.home-operations.com/endpoint: |
+      url: "http://homer-homer.homer.svc.cluster.local:80"
+      interval: 60s
+      conditions:
+        - "[STATUS] == 200"
+    item.homer.rajsingh.info/name: "Homer"
+    item.homer.rajsingh.info/icon: "fas fa-columns"
+    item.homer.rajsingh.info/subtitle: "homer-operator, auto-discovered"
+    service.homer.rajsingh.info/name: "Dashboards"
+    service.homer.rajsingh.info/icon: "fas fa-tachometer-alt"
+spec:
+  parentRefs:
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: websecure
+  hostnames:
+  - "homer.${LOCAL_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    # Service created by the operator for the Dashboard CR named "homer".
+    - name: homer-homer
+      port: 80

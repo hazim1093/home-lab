@@ -10,6 +10,10 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
+    item.homer.rajsingh.info/name: "Home Assistant"
+    item.homer.rajsingh.info/icon: "fas fa-home"
+    service.homer.rajsingh.info/name: "Home"
+    service.homer.rajsingh.info/icon: "fas fa-house-signal"
 spec:
   parentRefs:
   - name: traefik-gateway

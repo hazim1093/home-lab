@@ -10,6 +10,10 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200 || [STATUS] == 302"
+    item.homer.rajsingh.info/name: "Hermes Workspace"
+    item.homer.rajsingh.info/icon: "fas fa-columns"
+    service.homer.rajsingh.info/name: "AI"
+    service.homer.rajsingh.info/icon: "fas fa-brain"
 spec:
   parentRefs:
   - name: traefik-gateway

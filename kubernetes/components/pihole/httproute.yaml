@@ -10,6 +10,10 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
+    item.homer.rajsingh.info/name: "Pi-hole"
+    item.homer.rajsingh.info/icon: "fas fa-shield-alt"
+    service.homer.rajsingh.info/name: "Infrastructure"
+    service.homer.rajsingh.info/icon: "fas fa-server"
 spec:
   parentRefs:
   - name: traefik-gateway

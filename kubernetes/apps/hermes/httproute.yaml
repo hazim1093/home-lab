@@ -10,6 +10,10 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
+    item.homer.rajsingh.info/name: "Hermes"
+    item.homer.rajsingh.info/icon: "fas fa-robot"
+    service.homer.rajsingh.info/name: "AI"
+    service.homer.rajsingh.info/icon: "fas fa-brain"
 spec:
   parentRefs:
   - name: traefik-gateway
@@ -39,6 +43,8 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
+    # API endpoint (health/JSON), nothing to open in a browser.
+    item.homer.rajsingh.info/hide: "true"
 spec:
   parentRefs:
   - name: traefik-gateway

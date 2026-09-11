@@ -1,0 +1,24 @@
+apiVersion: homer.rajsingh.info/v1alpha1
+kind: Dashboard
+metadata:
+  name: homer
+  namespace: homer
+spec:
+  replicas: 1
+  # Everything below the header is discovered from HTTPRoutes (no static list).
+  homerConfig:
+    title: "Home Lab"
+    subtitle: "Auto-discovered from Gateway API HTTPRoutes"
+    header: true
+    defaults:
+      layout: columns
+      colorTheme: auto
+  serviceGrouping:
+    strategy: namespace
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi

@@ -71,6 +71,9 @@ home-lab/
 │       ├── home-assistant/          # Home automation
 │       ├── rustdesk/                # Remote desktop
 │       ├── gatus/                   # Health monitoring
+│       ├── homer-operator/          # Homer dashboard operator (HTTPRoute discovery)
+│       ├── homer/                   # Homer dashboard (auto-discovered services)
+│       ├── hajimari/                # Hajimari dashboard (static app list)
 │       ├── external-dns/            # Automatic DNS management
 │       └── renovate/                # Dependency updates
 ├── hallon/                          # Raspberry Pi management
