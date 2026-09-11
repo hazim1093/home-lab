@@ -60,6 +60,10 @@ spec:
       customApps:
         - group: Dashboards
           apps:
+            - name: Homarr
+              url: "https://homarr.${LOCAL_DOMAIN}"
+              icon: mdi:view-grid
+              info: "integrations, drag and drop"
             - name: Homer
               url: "https://homer.${LOCAL_DOMAIN}"
               icon: mdi:view-dashboard
