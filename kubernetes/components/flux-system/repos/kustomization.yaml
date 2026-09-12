@@ -16,4 +16,5 @@ resources:
 - prometheus-community.yaml
 - hajimari.yaml
 - homarr.yaml
+- homarr-controller.yaml
 - home-lab-private.yaml

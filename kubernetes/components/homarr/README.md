@@ -1,58 +1,42 @@
 # Homarr
 
 [Homarr](https://github.com/homarr-labs/homarr) dashboard (official chart, OCI `ghcr.io/homarr-labs/charts`),
-at `https://homarr.<LOCAL_DOMAIN>`. Its config lives in its own SQLite database (drag and drop, no YAML),
-so there is **no Kubernetes operator** for it — the `homarr-httproute-sync` CronJob below uses Homarr's
-[official API](https://homarr.dev/docs/management/api) to add apps instead.
+at `https://homarr.<LOCAL_DOMAIN>`. Config lives in its own SQLite database, not in YAML — the app
+inventory is synced from HTTPRoutes by [homarr-controller](../homarr-controller/) instead.
 
-## How the sync behaves
+## Files
 
-Every 10 minutes the CronJob lists Gateway API HTTPRoutes (read-only RBAC) and makes sure each hostname
-has an app in Homarr, matched on the app URL:
+- `helmrelease.yaml` — the dashboard itself (SQLite on a 1Gi PVC, read-only Kubernetes cluster view)
+- `admin-bootstrap-job.yaml` — one-shot Job that creates the login from the SOPS secret (see below)
+- `httproute.yaml` — exposed on `traefik-gateway`, with gatus health check and `homarr.dev/*` annotations
 
-- **new route → app created** (name, icon, description, `pingUrl` set to the in-cluster URL taken from the
-  gatus annotation, so Homarr can show online/offline status)
-- **existing apps are never modified or deleted** — anything you rename or move in the UI sticks
-- a newly created app is placed on a board once (first board, or `BOARD_NAME`); if placement fails it is
-  logged and the app just needs one manual drag. Existing items are never moved, so no duplicates
+## First-time setup (two one-time steps)
 
-Per-route annotations (all optional):
+1. **Login** — put your chosen credentials in the secret and let the Job apply them:
 
-| Annotation | Effect |
-|---|---|
-| `homarr.synced/name` | app title (defaults to the route name) |
-| `homarr.synced/icon` | [dashboard-icons](https://github.com/homarr-labs/dashboard-icons) slug, e.g. `home-assistant`, or a full URL |
-| `homarr.synced/description` | subtitle (defaults to `<namespace>/<route>`) |
-| `homarr.synced/enabled` | `"false"` keeps the route out of Homarr |
+   ```bash
+   printf '"%s"' 'youruser' | sops set --value-stdin kubernetes/components/homarr/secret.yaml '["stringData"]["admin-username"]'
+   printf '"%s"' 'yourpassword' | sops set --value-stdin kubernetes/components/homarr/secret.yaml '["stringData"]["admin-password"]'
+   ```
 
-## First-time setup (once)
+   Commit + merge; Flux re-runs the Job (it also runs on its own after the DB exists — no UI onboarding
+   needed once a user exists). To re-apply later (rotation), delete it and let Flux recreate it:
+   `kubectl delete job -n homarr homarr-admin-bootstrap`.
 
-1. Open `https://homarr.<LOCAL_DOMAIN>` and create the owner account.
-2. `Management → Tools → API → Authentication` → create an API key (format `<id>.<token>`).
-3. Store it in the SOPS secret (keeps it out of process listings):
+2. **API key for the sync** — Homarr has no way to create one from code: UI → *Manage → Tools → API →
+   create*, then
 
-```bash
-export SOPS_AGE_KEY_FILE=/opt/data/.config/sops/age/keys.txt
-printf '"%s"' '<id>.<token>' | sops set --value-stdin kubernetes/components/homarr/secret.yaml '["stringData"]["api-key"]'
-```
+   ```bash
+   printf '"%s"' '<id>.<token>' | sops set --value-stdin kubernetes/components/homarr/secret.yaml '["stringData"]["api-key"]'
+   ```
 
-Commit and merge — until the key is set the CronJob logs a hint and exits without changes.
+Until the API key is set, `homarr-controller` logs failed API calls and adds nothing.
 
-## K8s integration (`rbac.enabled`)
+## Notes
 
-Enables Homarr's read-only cluster view (`Management → Tools → Kubernetes`). The chart creates a
-ServiceAccount + ClusterRole that can read pods, services, **secrets**, configmaps, PVCs, namespaces,
-PVs, nodes, deployments, ingresses and metrics, cluster-wide. Set `rbac.enabled: false` in the
-HelmRelease if that is more access than you want.
-
-Resources: single replica, `requests: 25m/256Mi`, 1Gi PVC for `/appdata` (SQLite).
-
-Verify:
-
-```bash
-kubectl get hr,pod,pvc -n homarr
-kubectl logs -n homarr deploy/homarr | tail                     # startup, DB migrations
-kubectl get cronjob -n homarr
-kubectl create job -n homarr --from=cronjob/homarr-httproute-sync sync-now   # run the sync by hand
-kubectl logs -n homarr job/sync-now
-```
+- `rbac.enabled: true` turns on Homarr's read-only cluster view; the chart's ClusterRole also reads
+  secrets cluster-wide (its design) — set it to `false` if you don't want that.
+- The bootstrap Job uses Homarr's own CLI (`homarr recreate-admin` / `homarr update-password`), which
+  upstream describes as a recovery tool: it should not run while the app is serving heavy traffic. The
+  Job waits for the database, applies credentials once and stays `Completed` (no TTL, so Flux does not
+  re-run it in a loop).
