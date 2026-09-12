@@ -31,12 +31,13 @@ jobs:
       - name: Get changed component directories
         id: changed
         run: |
+          # Deletions are excluded: a removed component has nothing left to build.
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            CHANGED=$(git diff --name-only \
+            CHANGED=$(git diff --name-only --diff-filter=d \
               "${{ github.event.pull_request.base.sha }}" \
               "${{ github.event.pull_request.head.sha }}")
           else
-            CHANGED=$(git diff --name-only HEAD~1 HEAD)
+            CHANGED=$(git diff --name-only --diff-filter=d HEAD~1 HEAD)
           fi
 
           COMPONENTS=$(echo "${CHANGED}" \
