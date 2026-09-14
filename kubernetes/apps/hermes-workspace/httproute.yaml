@@ -10,7 +10,10 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200 || [STATUS] == 302"
-    homarr.synced/name: "Hermes Workspace"
+    homarr.dev/enabled: "true"
+    homarr.dev/name: "Hermes Workspace"
+    homarr.dev/url: "https://hermes-workspace.${LOCAL_DOMAIN}"
+    homarr.dev/ping-url: "http://hermes-workspace.hermes-workspace.svc.cluster.local:3000"
 spec:
   parentRefs:
   - name: traefik-gateway

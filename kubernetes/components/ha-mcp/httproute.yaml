@@ -10,8 +10,6 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
-    # URL-path auth only; not a browsable app.
-    homarr.synced/enabled: "false"
 spec:
   parentRefs:
   - name: traefik-gateway

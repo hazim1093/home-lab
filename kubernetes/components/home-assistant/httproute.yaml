@@ -10,8 +10,11 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
-    homarr.synced/name: "Home Assistant"
-    homarr.synced/icon: "home-assistant"
+    homarr.dev/enabled: "true"
+    homarr.dev/name: "Home Assistant"
+    homarr.dev/url: "https://home.${LOCAL_DOMAIN}"
+    homarr.dev/icon: "home-assistant"
+    homarr.dev/ping-url: "http://home-assistant.home-assistant.svc.cluster.local:8123"
 spec:
   parentRefs:
   - name: traefik-gateway

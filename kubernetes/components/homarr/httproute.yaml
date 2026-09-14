@@ -10,9 +10,12 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
-    homarr.synced/name: "Homarr"
-    homarr.synced/icon: "homarr"
-    homarr.synced/description: "integrations, drag and drop"
+    homarr.dev/enabled: "true"
+    homarr.dev/name: "Homarr"
+    homarr.dev/url: "https://homarr.${LOCAL_DOMAIN}"
+    homarr.dev/icon: "homarr"
+    homarr.dev/description: "integrations, drag and drop"
+    homarr.dev/ping-url: "http://homarr.homarr.svc.cluster.local:7575/api/health/ready"
 spec:
   parentRefs:
   - name: traefik-gateway
