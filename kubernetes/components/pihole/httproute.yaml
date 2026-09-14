@@ -11,7 +11,7 @@ metadata:
       conditions:
         - "[STATUS] == 200"
     homarr.dev/enabled: "true"
-    homarr.dev/category: "Home & Network"
+    homarr.dev/category: "Homelab Components"
     homarr.dev/name: "Pi-hole"
     homarr.dev/url: "https://pihole.${LOCAL_DOMAIN}"
     homarr.dev/icon: "pi-hole"

@@ -11,7 +11,7 @@ metadata:
       conditions:
         - "[STATUS] == 200"
     homarr.dev/enabled: "true"
-    homarr.dev/category: "Dashboards"
+    homarr.dev/category: "Homelab Components"
     homarr.dev/name: "Homarr"
     homarr.dev/url: "https://homarr.${LOCAL_DOMAIN}"
     homarr.dev/icon: "homarr"
