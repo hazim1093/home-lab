@@ -12,16 +12,19 @@ inventory is synced from HTTPRoutes by [homarr-controller](../homarr-controller/
 
 ## First-time setup (two one-time steps)
 
-1. **Login** — put your chosen credentials in the secret and let the Job apply them:
+1. **Login** — put your chosen credentials in the secret and apply them:
 
    ```bash
    printf '"%s"' 'youruser' | sops set --value-stdin kubernetes/components/homarr/secret.yaml '["stringData"]["admin-username"]'
    printf '"%s"' 'yourpassword' | sops set --value-stdin kubernetes/components/homarr/secret.yaml '["stringData"]["admin-password"]'
+   kubectl delete job -n homarr homarr-admin-bootstrap   # so it runs again with the new secret
+   flux reconcile kustomization homarr -n flux-system --with-source   # or wait for the 10m interval
    ```
 
-   Commit + merge; Flux re-runs the Job (it also runs on its own after the DB exists — no UI onboarding
-   needed once a user exists). To re-apply later (rotation), delete it and let Flux recreate it:
-   `kubectl delete job -n homarr homarr-admin-bootstrap`.
+   The Job is one-shot by design (no TTL, so Flux cannot re-run it in a loop and log you out), which is
+   why deleting it is how changed credentials get applied — same for a later rotation. While the password
+   is still the `CHANGEME` placeholder the Job logs a hint and exits 0, so merging this as-is is safe:
+   no UI onboarding is needed once a user exists.
 
 2. **API key for the sync** — Homarr has no way to create one from code: UI → *Manage → Tools → API →
    create*, then
