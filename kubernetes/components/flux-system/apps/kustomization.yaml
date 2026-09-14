@@ -27,7 +27,6 @@ resources:
 - node-exporter.yaml
 - hajimari.yaml
 - homarr.yaml
-- homarr-bootstrap.yaml
 - homarr-controller.yaml
 - private-apps.yaml
 - apps.yaml
