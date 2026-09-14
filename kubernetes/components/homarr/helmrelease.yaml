@@ -19,14 +19,22 @@ spec:
       interval: 12h
   values:
     replicaCount: 1
+    # Homarr v2 beta preview: upstream publishes the v2 build as homarr-test (see README).
     image:
-      repository: ghcr.io/homarr-labs/homarr
-      tag: "v1.77.0"
+      repository: ghcr.io/homarr-labs/homarr-test
+      tag: "v2"
       pullPolicy: IfNotPresent
     env:
       TZ: "Europe/Stockholm"
       LOG_LEVEL: "info"
       AUTH_PROVIDERS: "credentials"
+      # Beta-only hosted Workshop; off by default, see README.
+      # WORKSHOP_API_URL: "https://v2.preview.homarr.dev/"
+    # v2 migrates the SQLite database on first start — don't let probes kill it mid-migration.
+    livenessProbe:
+      initialDelaySeconds: 120
+    readinessProbe:
+      initialDelaySeconds: 60
     envSecrets:
       dbEncryption:
         existingSecret: "homarr-secrets"
