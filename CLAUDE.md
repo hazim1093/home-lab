@@ -73,7 +73,6 @@ home-lab/
 │       ├── gatus/                   # Health monitoring
 │       ├── hajimari/                # Hajimari dashboard (static app list)
 │       ├── homarr/                  # Homarr dashboard + HTTPRoute app sync
-│       ├── homarr-bootstrap/        # One-shot Job: applies the Homarr login from SOPS
 │       ├── homarr-controller/       # Syncs annotated HTTPRoutes onto the Homarr board
 │       ├── external-dns/            # Automatic DNS management
 │       └── renovate/                # Dependency updates
