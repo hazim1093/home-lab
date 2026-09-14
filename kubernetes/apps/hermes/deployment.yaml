@@ -100,7 +100,7 @@ spec:
           limits:
             # was 1536Mi; raised after repeated whole-cgroup OOM kills
             memory: 3072Mi
-            cpu: 1500m
+            ## cpu: 1500m
       volumes:
       - name: data
         persistentVolumeClaim:
