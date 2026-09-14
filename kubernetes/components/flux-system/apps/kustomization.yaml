@@ -22,7 +22,7 @@ resources:
 - reloader.yaml
 - grafana-alloy.yaml
 - grafana-operator.yaml
-- grafana-dashboards.yaml
+- grafana-resources.yaml
 - kube-state-metrics.yaml
 - node-exporter.yaml
 - hajimari.yaml

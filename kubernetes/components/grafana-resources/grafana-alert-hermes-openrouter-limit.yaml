@@ -1,0 +1,57 @@
+# Alerts on hermes hitting OpenRouter's credit/usage limit (HTTP 402), via the logs Alloy already ships to Loki.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaAlertRuleGroup
+metadata:
+  name: hermes-openrouter-limit
+  namespace: grafana-operator
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana-cloud
+  interval: 1m
+  name: hermes
+  rules:
+  - uid: hermes-openrouter-limit
+    title: Hermes hit OpenRouter credit/usage limit
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    notificationSettings:
+      receiver: slack
+    labels:
+      severity: critical
+      namespace: hermes
+    annotations:
+      summary: Hermes OpenRouter key is out of credits or over its monthly limit
+      description: "{{ $values.A }} HTTP 402 / openrouter_key_limit line(s) from hermes in the last 5m. Raise or remove the limit: https://openrouter.ai/settings/keys"
+    data:
+    - refId: A
+      datasourceUid: grafanacloud-logs
+      relativeTimeRange:
+        from: 300
+        to: 0
+      model:
+        editorMode: code
+        expr: count_over_time({namespace="hermes"} |~ "(?i)402|openrouter_key_limit|monthly limit|requires more credits" [5m])
+        instant: true
+        queryType: instant
+        refId: A
+    - refId: B
+      datasourceUid: __expr__
+      model:
+        type: reduce
+        expression: A
+        reducer: last
+        refId: B
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        type: threshold
+        expression: B
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+        refId: C
