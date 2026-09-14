@@ -1,0 +1,17 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: homarr-bootstrap
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/components/homarr-bootstrap
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: home-lab
+  # No `wait: true` here on purpose: Flux health-checks Jobs, so a bootstrap that fails
+  # would leave this Kustomization (and anything depending on it) unready forever.
+  wait: false
+  dependsOn:
+    - name: homarr
