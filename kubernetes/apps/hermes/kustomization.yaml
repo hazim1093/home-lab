@@ -10,6 +10,7 @@ resources:
   - dashboard-internal-auth-secret.yaml
   - networkpolicy.yaml
   - agent-serviceaccount.yaml
+  - agent-extra-clusterrole.yaml
   - agent-clusterrolebinding.yaml
   - deployment.yaml
   - service.yaml
