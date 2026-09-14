@@ -28,12 +28,18 @@ Only routes with `homarr.dev/enabled: "true"` are managed; `name` and `url` are 
 | `homarr.dev/icon` | dashboard-icons slug (`gatus`, `pi-hole`, …) or full URL |
 | `homarr.dev/description` | subtitle |
 | `homarr.dev/ping-url` | in-cluster URL for status dots (copied from the gatus endpoint) |
+| `homarr.dev/category` | board group for the tile. Defaults to the route's **namespace**, so without it every route lands in a group of its own; groups in use: `Dashboards`, `Monitoring`, `Home & Network`, `AI & Dev` |
 
 Unannotated routes (e.g. `hermes-api`, `ha-mcp`) are ignored — deliberately not listed in the dashboard.
 Routes annotated **and** then un-annotated are removed from the board by the controller, since it
 reconciles desired state.
 
 ## Caveat
+
+Groups are created but never deleted: dropping or changing a `homarr.dev/category` leaves the old,
+now-empty group header on the board, so delete those once in the board editor. A group's position is
+fixed when it is first created (the controller assigns the y-offset on that first reconcile) —
+reorder by dragging the header afterwards, which sticks.
 
 The controller talks to Homarr's internal tRPC API rather than the documented OpenAPI surface, so a
 Homarr upgrade can break it before an upstream fix lands. It is a young project (single maintainer,

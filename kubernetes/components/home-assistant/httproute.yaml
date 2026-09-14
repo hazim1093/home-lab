@@ -11,6 +11,7 @@ metadata:
       conditions:
         - "[STATUS] == 200"
     homarr.dev/enabled: "true"
+    homarr.dev/category: "Home & Network"
     homarr.dev/name: "Home Assistant"
     homarr.dev/url: "https://home.${LOCAL_DOMAIN}"
     homarr.dev/icon: "home-assistant"

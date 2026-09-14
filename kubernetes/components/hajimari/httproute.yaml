@@ -11,6 +11,7 @@ metadata:
       conditions:
         - "[STATUS] == 200"
     homarr.dev/enabled: "true"
+    homarr.dev/category: "Dashboards"
     homarr.dev/name: "Hajimari"
     homarr.dev/url: "https://hajimari.${LOCAL_DOMAIN}"
     homarr.dev/icon: "startpage"
