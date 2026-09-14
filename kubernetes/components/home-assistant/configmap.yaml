@@ -13,9 +13,41 @@ data:
     script: !include scripts.yaml
     scene: !include scenes.yaml
 
-    # Themes installed via HACS land in /config/themes/<name>/ (nested)
+    # HACS installs themes into a nested dir HA's include can't scan — define inline
     frontend:
-      themes: !include_dir_merge_named themes/mushroom
+      themes:
+        Mushroom Shadow:
+          ha-card-box-shadow: 0px 2px 4px 0px rgba(0,0,0,0.16)
+          ha-card-border-width: 0
+          modes:
+            light: {}
+            dark: {}
+        Mushroom Square:
+          ha-badge-border-radius: 6px
+          ha-card-border-radius: 6px
+          ha-card-features-border-radius: 6px
+          ha-tile-icon-border-radius: 6px
+          mush-spacing: 8px
+          mush-icon-border-radius: 6px
+          mush-control-border-radius: 6px
+          mush-chip-border-radius: 6px
+          modes:
+            light: {}
+            dark: {}
+        Mushroom Square Shadow:
+          ha-badge-border-radius: 6px
+          ha-card-box-shadow: 0px 2px 4px 0px rgba(0,0,0,0.16)
+          ha-card-border-width: 0
+          ha-card-border-radius: 6px
+          ha-card-features-border-radius: 6px
+          ha-tile-icon-border-radius: 6px
+          mush-spacing: 8px
+          mush-icon-border-radius: 6px
+          mush-control-border-radius: 6px
+          mush-chip-border-radius: 6px
+          modes:
+            light: {}
+            dark: {}
 
     # Backups
     backup:
