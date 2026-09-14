@@ -9,7 +9,7 @@ spec:
   prune: true
   sourceRef:
     kind: GitRepository
-    name: home-lab
+    name: flux-system
   # No `wait: true` here on purpose: Flux health-checks Jobs, so a bootstrap that fails
   # would leave this Kustomization (and anything depending on it) unready forever.
   wait: false
