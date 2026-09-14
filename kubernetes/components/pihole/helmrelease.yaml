@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: pihole
-      version: "2.35.0"
+      version: "2.38.0"
       sourceRef:
         kind: HelmRepository
         name: mojo2600
@@ -27,11 +27,27 @@ spec:
     # OISD - comprehensive blocklist (domains format for PiHole)
     - https://big.oisd.nl/domainswild
     # Hagezi Multi Pro
-    - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/pro.txt
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro-onlydomains.txt
     # Hagezi NSFW
     - https://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/adblock/nsfw.txt
     # Hagezi Gambling
     - https://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/adblock/gambling.txt
+    # Hagezi Threat Intelligence Feed
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/tif-onlydomains.txt
+    # Hagezi Fake (scam/fake sites)
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/fake-onlydomains.txt
+    # Hagezi Popup Ads
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/popupads-onlydomains.txt
+    # Hagezi DynDNS (abused for phishing)
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/dyndns-onlydomains.txt
+    # Hagezi Native Tracker - Samsung
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.samsung-onlydomains.txt
+    # Hagezi Native Tracker - Xiaomi
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.xiaomi-onlydomains.txt
+    # Hagezi Native Tracker - Apple
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.apple-onlydomains.txt
+    # Hagezi Native Tracker - Vivo
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.vivo-onlydomains.txt
     # Firebog - Suspicious
     - https://raw.githubusercontent.com/PolishFiltersTeam/KADhosts/master/KADhosts.txt
     - https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts
