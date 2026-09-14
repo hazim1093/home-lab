@@ -8,3 +8,5 @@ resources:
   - sync-rbac.yaml
   - sync-configmap.yaml
   - sync-cronjob.yaml
+
+# ci: shared-workflow caller smoke test
