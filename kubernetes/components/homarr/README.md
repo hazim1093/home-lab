@@ -1,8 +1,8 @@
 # Homarr
 
 [Homarr](https://github.com/homarr-labs/homarr) dashboard (official chart, OCI `ghcr.io/homarr-labs/charts`),
-at `https://homarr.<LOCAL_DOMAIN>`. Config lives in its own SQLite database, not in YAML — the app
-inventory is synced from HTTPRoutes by [homarr-controller](../homarr-controller/) instead.
+at `https://homarr.<LOCAL_DOMAIN>`. Config lives in its own SQLite database, not in YAML — board tiles
+are added in the board editor, or through Homarr's own API (see *Board tiles* below).
 
 ## Homarr v2 beta (current image)
 
@@ -22,21 +22,55 @@ Restoring into v2 (v2 applies the backup's migrations itself) is the cleaner pat
 
 Caveats while on the beta:
 
-- `homarr-controller` drives Homarr's internal tRPC API and v2 replaces categories/sections with
-  Containers, so the HTTPRoute sync likely stops working. Harmless if it does: existing tiles are
-  then maintained in the board editor, and new routes have to be added by hand.
 - `WORKSHOP_API_URL` (hosted custom-widget Workshop) is commented out in `helmrelease.yaml`;
   enabling it makes the pod call `v2.preview.homarr.dev`.
 - `tag: "v2"` is a floating beta tag with `pullPolicy: IfNotPresent`, so a node that already has the
   image won't re-pull it — delete the pod to pick up a newer beta build.
+- Widgets and containers live in the *Base* layout only unless they are also placed in the Mobile
+  layout (board settings → Layout).
+
+## Board tiles
+
+Tiles come from the `homarr.dev/*` annotations on the HTTPRoutes (`name`, `url`, `icon`,
+`description`, `ping-url`, `category`) — they are the inventory of what belongs on the board, and the
+matching lines to copy when adding a tile by hand.
+
+Nothing consumes those annotations automatically. `homarr-controller` (the community
+[adamancini controller](https://github.com/adamancini/homarr-kubernetes-dashboard-controller)) was
+removed in favour of the v2 API: it drives Homarr's *internal* tRPC board API, which v2 changed, so
+every reconcile had been failing with `400 invalid_union` since the upgrade — it could no longer write
+tiles at all. Homarr's own Kubernetes integration is a read-only inventory view and, per its docs,
+"Kubernetes resources are not converted into Homarr apps or integrations", and its Docker discovery
+does not apply to a k3s cluster. So a new service in this lab is added to the board the same way as any
+other edit:
+
+- by hand in the board editor (drag/drop, resize, move into a container), or
+- via the API, e.g. create the app and then place it on the board:
+
+  ```bash
+  curl -s -X POST -H "ApiKey: $HOMARR_API_KEY" -H 'Content-Type: application/json' \
+    -d '{"name":"My App","iconUrl":"https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/my-app.png",
+         "href":"https://my-app.<LOCAL_DOMAIN>"}' \
+    https://homarr.<LOCAL_DOMAIN>/api/apps
+  ```
+
+  (`GET /api/openapi` lists the full surface; placing the tile on a board is
+  `POST /api/boards/items` with `{"boardId":<id>,"kind":"app","options":{"appId":<app id>}}`, which
+  drops it on the canvas — drag it into a container afterwards, or edit the board JSON via
+  `board.saveBoard`.)
+
+If the annotation-driven sync is wanted again, the option is an in-repo CronJob as before #99 — the
+[git history](https://github.com/hazim1093/home-lab/commit/e9bfc00) has that implementation
+(ServiceAccount + ClusterRole listing `httproutes`, ConfigMap script, CronJob calling the REST API);
+it needs the two v2 API calls above instead of the v1 ones.
 
 ## Files
 
 - `helmrelease.yaml` — the dashboard itself (SQLite on a 1Gi PVC, read-only Kubernetes cluster view)
 - `httproute.yaml` — exposed on `traefik-gateway`, with gatus health check and `homarr.dev/*` annotations
 
-The first user and the sync's API key are one-time manual steps (below) — Homarr offers no env var or
-API for either, so neither can be applied from Git.
+The first user and the API key are one-time manual steps (below) — Homarr offers no env var or API for
+either, so neither can be applied from Git.
 
 ## First-time setup
 
@@ -45,14 +79,13 @@ API for either, so neither can be applied from Git.
    not work: the bundled recovery CLI hangs in a fresh container, because the image's logger opens a
    Redis connection unless `DISABLE_REDIS_LOGS=true`, and Redis is only started by the app container's
    own entrypoint.
-2. **API key for the sync** — Homarr has no way to create one from code: UI → *Manage → Tools → API →
-   create*, then
+2. **API key** — Homarr has no way to create one from code: UI → *Manage → Tools → API → create*, then
 
    ```bash
    printf '"%s"' '<id>.<token>' | sops set --value-stdin kubernetes/components/homarr/secret.yaml '["stringData"]["api-key"]'
    ```
 
-Until the API key is set, `homarr-controller` logs failed API calls and adds nothing.
+   Needed for API/automation access (`ApiKey:` header) and for Homarr's MCP endpoint at `/api/mcp`.
 
 ## Notes
 
