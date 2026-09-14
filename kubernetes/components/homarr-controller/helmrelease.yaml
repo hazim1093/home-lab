@@ -18,6 +18,20 @@ spec:
         namespace: flux-system
   install:
     timeout: 5m
+  # The chart has no podAnnotations value, so the reloader hint is patched onto the
+  # Deployment: rotating the API key in homarr-secrets then rolls this pod by itself.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+            patch: |-
+              - op: add
+                path: /spec/template/metadata/annotations
+                value: {}
+              - op: add
+                path: /spec/template/metadata/annotations/reloader.stakater.com~1auto
+                value: "true"
   values:
     # Gateway API only: this lab has no Ingress/IngressRoute objects.
     sources:
@@ -32,7 +46,8 @@ spec:
       name: home-lab
       columnCount: 12
     annotationPrefix: homarr.dev
-    defaultIconBaseURL: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png
+    # The controller appends ".svg" to a bare icon slug, so this must be the svg directory.
+    defaultIconBaseURL: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg
     namespaces:
       allNamespaces: true
       ignore:
