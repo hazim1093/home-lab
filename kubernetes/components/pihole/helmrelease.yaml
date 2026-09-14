@@ -21,6 +21,8 @@ spec:
         memory: 64Mi
         cpu: 50m
 
+    # NOTE: only seeds gravity.db on first install; changes here need a manual
+    # `pihole -a adlist ...` + `pihole -g` in the running pod to take effect.
     adlists:
     # StevenBlack's Unified Hosts (ads + malware)
     - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
