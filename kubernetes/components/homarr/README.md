@@ -1,8 +1,8 @@
 # Homarr
 
 [Homarr](https://github.com/homarr-labs/homarr) dashboard (official chart, OCI `ghcr.io/homarr-labs/charts`),
-at `https://homarr.<LOCAL_DOMAIN>`. Config lives in its own SQLite database, not in YAML — board tiles
-are added in the board editor, or through Homarr's own API (see *Board tiles* below).
+at `https://homarr.<LOCAL_DOMAIN>`. Config lives in its own SQLite database, not in YAML — the tile
+inventory comes from annotations on the HTTPRoutes and is reconciled by an in-repo CronJob (below).
 
 ## Homarr v2 beta (current image)
 
@@ -29,45 +29,54 @@ Caveats while on the beta:
 - Widgets and containers live in the *Base* layout only unless they are also placed in the Mobile
   layout (board settings → Layout).
 
-## Board tiles
+## Annotations (the tile inventory)
 
-Tiles come from the `homarr.dev/*` annotations on the HTTPRoutes (`name`, `url`, `icon`,
-`description`, `ping-url`, `category`) — they are the inventory of what belongs on the board, and the
-matching lines to copy when adding a tile by hand.
+| Annotation | Notes |
+|---|---|
+| `homarr.dev/enabled` | `"true"` to manage the route |
+| `homarr.dev/name` | app + tile name (required) |
+| `homarr.dev/url` | link target, `https://<host>.${LOCAL_DOMAIN}` (required) |
+| `homarr.dev/icon` | dashboard-icons slug (`gatus`, `pi-hole`, …) or a full image URL |
+| `homarr.dev/description` | app description (optional) |
+| `homarr.dev/ping-url` | in-cluster URL for the tile's status dot (copied from the gatus endpoint) |
+| `homarr.dev/category` | container that files the tile: `Homelab Components` or `Homelab Apps` |
 
-Nothing consumes those annotations automatically. `homarr-controller` (the community
-[adamancini controller](https://github.com/adamancini/homarr-kubernetes-dashboard-controller)) was
-removed in favour of the v2 API: it drives Homarr's *internal* tRPC board API, which v2 changed, so
-every reconcile had been failing with `400 invalid_union` since the upgrade — it could no longer write
-tiles at all. Homarr's own Kubernetes integration is a read-only inventory view and, per its docs,
-"Kubernetes resources are not converted into Homarr apps or integrations", and its Docker discovery
-does not apply to a k3s cluster. So a new service in this lab is added to the board the same way as any
-other edit:
+Routes without `homarr.dev/enabled: "true"` are ignored — `hermes-gateway`, `ha-mcp` and
+`screener-api` are deliberately not on the board.
 
-- by hand in the board editor (drag/drop, resize, move into a container), or
-- via the API, e.g. create the app and then place it on the board:
+## Tile sync (`homarr-httproute-sync`)
 
-  ```bash
-  curl -s -X POST -H "ApiKey: $HOMARR_API_KEY" -H 'Content-Type: application/json' \
-    -d '{"name":"My App","iconUrl":"https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/my-app.png",
-         "href":"https://my-app.<LOCAL_DOMAIN>"}' \
-    https://homarr.<LOCAL_DOMAIN>/api/apps
-  ```
+`sync-cronjob.yaml` runs `sync.py` (from `sync-configmap.yaml`) every 10 minutes. It lists HTTPRoutes
+cluster-wide using its own ServiceAccount and the `httproutes` read granted in `sync-rbac.yaml`, then
+reconciles Homarr with the API key from `homarr-secrets`:
 
-  (`GET /api/openapi` lists the full surface; placing the tile on a board is
-  `POST /api/boards/items` with `{"boardId":<id>,"kind":"app","options":{"appId":<app id>}}`, which
-  drops it on the canvas — drag it into a container afterwards, or edit the board JSON via
-  `board.saveBoard`.)
+- creates a missing app (`POST /api/apps`) and a tile for it, filed in the container named by
+  `homarr.dev/category`
+- updates an app when name, icon, url, description or ping-url drift from the annotations
+  (`PATCH /api/apps/{id}`)
+- moves a managed tile whose category names a different container (`ENFORCE_CATEGORY=true`, default)
+- placement uses the same `board.getBoardByName` / `board.saveBoard` calls as the board editor, and
+  only items it created itself (`managed-<appId>`) — manual tiles, widgets and rail items are untouched,
+  and a tile's position *inside* its container is never changed
+- never deletes: a managed tile whose route lost its annotations is only logged (`PRUNE=false`, default)
 
-If the annotation-driven sync is wanted again, the option is an in-repo CronJob as before #99 — the
-[git history](https://github.com/hazim1093/home-lab/commit/e9bfc00) has that implementation
-(ServiceAccount + ClusterRole listing `httproutes`, ConfigMap script, CronJob calling the REST API);
-it needs the two v2 API calls above instead of the v1 ones.
+Run it by hand with `kubectl create job --from=cronjob/homarr-httproute-sync homarr-sync-now -n homarr`
+(delete the finished Job afterwards); `DRY_RUN=true` logs the plan without writing anything.
+
+This replaced the community `homarr-controller` (removed in #112). That controller drove Homarr's
+*internal* tRPC board API, which the v2 upgrade changed, so every reconcile had been failing with
+`400 invalid_union` and writing nothing. Homarr's own Kubernetes integration is a read-only inventory
+view — its docs state "Kubernetes resources are not converted into Homarr apps or integrations" — and
+its Docker discovery does not apply to a k3s cluster.
+
+Tiles without an HTTPRoute (external services, or the Homarr docs links) are added by hand in the board
+editor.
 
 ## Files
 
 - `helmrelease.yaml` — the dashboard itself (SQLite on a 1Gi PVC, read-only Kubernetes cluster view)
-- `httproute.yaml` — exposed on `traefik-gateway`, with gatus health check and `homarr.dev/*` annotations
+- `httproute.yaml` — exposed on `traefik-gateway`, with gatus health check and the `homarr.dev/*` annotations
+- `sync-rbac.yaml` / `sync-configmap.yaml` / `sync-cronjob.yaml` — the tile sync (see above)
 
 The first user and the API key are one-time manual steps (below) — Homarr offers no env var or API for
 either, so neither can be applied from Git.
@@ -85,7 +94,7 @@ either, so neither can be applied from Git.
    printf '"%s"' '<id>.<token>' | sops set --value-stdin kubernetes/components/homarr/secret.yaml '["stringData"]["api-key"]'
    ```
 
-   Needed for API/automation access (`ApiKey:` header) and for Homarr's MCP endpoint at `/api/mcp`.
+   Needed by the tile sync, by any `ApiKey:` API call, and by Homarr's MCP endpoint at `/api/mcp`.
 
 ## Notes
 
