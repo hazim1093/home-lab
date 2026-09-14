@@ -7,4 +7,5 @@ resources:
   - dashboard-top-workloads.yaml
   - grafana-slack-webhook-secret.yaml
   - grafana-contactpoint-slack.yaml
+  - grafana-folder-alerts.yaml
   - grafana-alert-hermes-openrouter-limit.yaml
