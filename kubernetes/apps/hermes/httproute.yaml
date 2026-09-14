@@ -11,6 +11,7 @@ metadata:
       conditions:
         - "[STATUS] == 200"
     homarr.dev/enabled: "true"
+    homarr.dev/category: "AI & Dev"
     homarr.dev/name: "Hermes"
     homarr.dev/url: "https://hermes.${LOCAL_DOMAIN}"
     # Homarr rejects app.create without an icon, so this is required for the tile.
