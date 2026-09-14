@@ -11,7 +11,7 @@ metadata:
       conditions:
         - "[STATUS] == 200"
     homarr.dev/enabled: "true"
-    homarr.dev/category: "Monitoring"
+    homarr.dev/category: "Homelab Components"
     homarr.dev/name: "Gatus"
     homarr.dev/url: "https://gatus.${LOCAL_DOMAIN}"
     homarr.dev/icon: "gatus"
