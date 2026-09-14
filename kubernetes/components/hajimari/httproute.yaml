@@ -1,28 +1,30 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: home-assistant
-  namespace: home-assistant
+  name: hajimari
+  namespace: hajimari
   annotations:
     gatus.home-operations.com/enabled: "true"
     gatus.home-operations.com/endpoint: |
-      url: "http://home-assistant.home-assistant.svc.cluster.local:8123"
+      url: "http://hajimari.hajimari.svc.cluster.local:3000"
       interval: 60s
       conditions:
         - "[STATUS] == 200"
-    homarr.synced/name: "Home Assistant"
-    homarr.synced/icon: "home-assistant"
+    homarr.synced/name: "Hajimari"
+    homarr.synced/icon: "startpage"
+    homarr.synced/description: "static app list"
 spec:
   parentRefs:
   - name: traefik-gateway
     namespace: traefik
+    sectionName: websecure
   hostnames:
-  - "home.${LOCAL_DOMAIN}"
+  - "hajimari.${LOCAL_DOMAIN}"
   rules:
   - matches:
     - path:
         type: PathPrefix
         value: /
     backendRefs:
-    - name: home-assistant
-      port: 8123
+    - name: hajimari
+      port: 3000

@@ -1,28 +1,30 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: home-assistant
-  namespace: home-assistant
+  name: homarr
+  namespace: homarr
   annotations:
     gatus.home-operations.com/enabled: "true"
     gatus.home-operations.com/endpoint: |
-      url: "http://home-assistant.home-assistant.svc.cluster.local:8123"
+      url: "http://homarr.homarr.svc.cluster.local:7575/api/health/ready"
       interval: 60s
       conditions:
         - "[STATUS] == 200"
-    homarr.synced/name: "Home Assistant"
-    homarr.synced/icon: "home-assistant"
+    homarr.synced/name: "Homarr"
+    homarr.synced/icon: "homarr"
+    homarr.synced/description: "integrations, drag and drop"
 spec:
   parentRefs:
   - name: traefik-gateway
     namespace: traefik
+    sectionName: websecure
   hostnames:
-  - "home.${LOCAL_DOMAIN}"
+  - "homarr.${LOCAL_DOMAIN}"
   rules:
   - matches:
     - path:
         type: PathPrefix
         value: /
     backendRefs:
-    - name: home-assistant
-      port: 8123
+    - name: homarr
+      port: 7575

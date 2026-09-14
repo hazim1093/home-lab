@@ -71,6 +71,8 @@ home-lab/
 │       ├── home-assistant/          # Home automation
 │       ├── rustdesk/                # Remote desktop
 │       ├── gatus/                   # Health monitoring
+│       ├── hajimari/                # Hajimari dashboard (static app list)
+│       ├── homarr/                  # Homarr dashboard + HTTPRoute app sync
 │       ├── external-dns/            # Automatic DNS management
 │       └── renovate/                # Dependency updates
 ├── hallon/                          # Raspberry Pi management

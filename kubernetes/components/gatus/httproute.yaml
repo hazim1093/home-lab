@@ -10,6 +10,8 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
+    homarr.synced/name: "Gatus"
+    homarr.synced/icon: "gatus"
 spec:
   parentRefs:
   - name: traefik-gateway

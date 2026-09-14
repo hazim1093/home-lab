@@ -10,6 +10,7 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
+    homarr.synced/name: "Hermes"
 spec:
   parentRefs:
   - name: traefik-gateway
@@ -39,6 +40,8 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200"
+    # API endpoint (health/JSON), nothing to open in a browser.
+    homarr.synced/enabled: "false"
 spec:
   parentRefs:
   - name: traefik-gateway

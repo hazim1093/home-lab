@@ -1,0 +1,225 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homarr-httproute-sync
+  namespace: homarr
+data:
+  sync.py: |
+    #!/usr/bin/env python3
+    """Mirror Gateway API HTTPRoutes into Homarr apps.
+
+    Idempotent and additive: each HTTPRoute hostname maps to one Homarr app,
+    matched on href. Apps are created when missing, never deleted and never
+    modified, so anything you change in the Homarr UI stays. Per-route
+    annotations can rename/icon/hide an entry (see the component README).
+    """
+    import json
+    import os
+    import re
+    import ssl
+    import sys
+    import urllib.error
+    import urllib.request
+
+    HOMARR_URL = os.environ.get("HOMARR_URL", "http://homarr.homarr.svc.cluster.local:7575").rstrip("/")
+    API_KEY = (os.environ.get("HOMARR_API_KEY") or "").strip()
+    DRY_RUN = os.environ.get("DRY_RUN", "false").lower() in ("1", "true", "yes")
+    PLACE_ITEMS = os.environ.get("PLACE_ITEMS", "true").lower() in ("1", "true", "yes")
+    BOARD_NAME = os.environ.get("BOARD_NAME", "")
+    BOARD_COLUMNS = int(os.environ.get("BOARD_COLUMNS", "12"))
+    TILE = int(os.environ.get("TILE", "2"))
+    ICON_BASE = os.environ.get("ICON_BASE", "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/")
+    ICON_FALLBACK = os.environ.get("ICON_FALLBACK", "kubernetes")
+
+    SA = "/var/run/secrets/kubernetes.io/serviceaccount"
+    K8S = "https://kubernetes.default.svc"
+    ROUTES_API = "/apis/gateway.networking.k8s.io/v1/httproutes"
+
+    A_NAME = "homarr.synced/name"
+    A_ICON = "homarr.synced/icon"
+    A_DESC = "homarr.synced/description"
+    A_ENABLED = "homarr.synced/enabled"
+    GATUS_ENDPOINT = "gatus.home-operations.com/endpoint"
+
+
+    class HomarrError(Exception):
+        pass
+
+
+    def log(msg):
+        print(msg, flush=True)
+
+
+    def request(url, method="GET", payload=None, headers=None, cafile=None):
+        body = json.dumps(payload).encode() if payload is not None else None
+        req = urllib.request.Request(url, data=body, method=method)
+        req.add_header("Accept", "application/json")
+        if body is not None:
+            req.add_header("Content-Type", "application/json")
+        for key, value in (headers or {}).items():
+            req.add_header(key, value)
+        context = urllib.request.ssl.create_default_context(cafile=cafile) if url.startswith("https") else None
+        try:
+            with urllib.request.urlopen(req, timeout=30, context=context) as resp:
+                raw = resp.read().decode()
+        except urllib.error.HTTPError as err:
+            detail = err.read().decode()[:300]
+            raise HomarrError(f"{method} {url} -> HTTP {err.code}: {detail}") from None
+        except Exception as err:  # network/DNS/TLS
+            raise HomarrError(f"{method} {url} -> {err}") from None
+        return json.loads(raw) if raw else None
+
+
+    def kube_token():
+        with open(f"{SA}/token") as fh:
+            return fh.read().strip()
+
+
+    def homarr(method, path, payload=None):
+        return request(
+            f"{HOMARR_URL}{path}",
+            method=method,
+            payload=payload,
+            headers={"ApiKey": API_KEY},
+        )
+
+
+    def http_routes():
+        routes, cont = [], None
+        while True:
+            suffix = f"?continue={cont}" if cont else ""
+            page = request(f"{K8S}{ROUTES_API}{suffix}", headers={"Authorization": f"Bearer {kube_token()}"}, cafile=f"{SA}/ca.crt")
+            routes.extend(page.get("items", []))
+            cont = page.get("metadata", {}).get("continue")
+            if not cont:
+                return routes
+
+
+    def annotation(meta, key):
+        return (meta.get("annotations") or {}).get(key, "").strip()
+
+
+    def icon_url(value):
+        if not value:
+            value = ICON_FALLBACK
+        if value.startswith("http"):
+            return value
+        return f"{ICON_BASE}{value}.png"
+
+
+    def in_cluster_url(route):
+        """Ping target: prefer the in-cluster URL gatus already knows about
+        (no TLS trust issues from inside the cluster)."""
+        block = annotation(route["metadata"], GATUS_ENDPOINT)
+        match = re.search(r'url:\s*"?([^"\s]+)"?', block)
+        return match.group(1) if match else None
+
+
+    def targets(routes):
+        out = []
+        for route in routes:
+            meta = route["metadata"]
+            hosts = route.get("spec", {}).get("hostnames") or []
+            if not hosts:
+                continue
+            if annotation(meta, A_ENABLED).lower() in ("false", "no", "0", "off"):
+                continue
+            name = annotation(meta, A_NAME) or meta["name"]
+            description = annotation(meta, A_DESC) or f"httproute {meta['namespace']}/{meta['name']}"
+            href = f"https://{hosts[0]}"
+            out.append({
+                "name": name,
+                "description": description,
+                "iconUrl": icon_url(annotation(meta, A_ICON)),
+                "href": href,
+                "pingUrl": in_cluster_url(route) or href,
+            })
+        return out
+
+
+    def key(href):
+        return (href or "").rstrip("/").lower()
+
+
+    def app_payload(target):
+        return {k: target[k] for k in ("name", "description", "iconUrl", "href", "pingUrl")}
+
+
+    def first_board_id():
+        boards = homarr("GET", "/api/boards") or []
+        if not boards:
+            return None, None
+        for board in boards:
+            if BOARD_NAME and board.get("name", "").lower() == BOARD_NAME.lower():
+                return board["id"], board.get("name")
+        return boards[0]["id"], boards[0].get("name")
+
+
+    def place(board_id, app_id, index):
+        per_row = max(1, BOARD_COLUMNS // TILE)
+        payload = {
+            "boardId": board_id,
+            "kind": "app",
+            "options": {
+                "appId": app_id,
+                "layout": {"x": (index % per_row) * TILE, "y": (index // per_row) * TILE, "w": TILE, "h": TILE},
+            },
+        }
+        item = homarr("POST", "/api/boards/items", payload)
+        return (item or {}).get("itemId")
+
+
+    def main():
+        if not API_KEY or API_KEY.startswith("PLACEHOLDER"):
+            log("HOMARR_API_KEY is not set yet - create one in Homarr (Management > Tools > API) and put it in the homarr-secrets secret. Nothing to do.")
+            return 0
+        if DRY_RUN:
+            log("DRY_RUN=true - no changes will be written")
+
+        wanted = targets(http_routes())
+        existing = {key(app.get("href")): app for app in (homarr("GET", "/api/apps") or [])}
+        log(f"{len(wanted)} HTTPRoute target(s), {len(existing)} existing app(s) in Homarr")
+
+        board_id = board_name = None
+        if PLACE_ITEMS:
+            board_id, board_name = first_board_id()
+            if not board_id:
+                log("no Homarr board found - skipping placement")
+            else:
+                log(f"placing new items on board '{board_name}'")
+
+        created = unchanged = 0
+        for target in wanted:
+            payload = app_payload(target)
+            if key(payload["href"]) in existing:
+                current = existing[key(payload["href"])]
+                diff = [f for f in ("name", "iconUrl", "pingUrl") if (current.get(f) or "") != payload[f]]
+                if diff:
+                    log(f"= {payload['name']}: exists, differs in {', '.join(diff)} (edit in the UI; sync never modifies apps)")
+                else:
+                    log(f"= {payload['name']}: up to date")
+                unchanged += 1
+                continue
+            if DRY_RUN:
+                log(f"+ would create {payload['name']} -> {payload['href']}")
+                created += 1
+                continue
+            app = homarr("POST", "/api/apps", payload) or {}
+            app_id = app.get("appId")
+            log(f"+ created {payload['name']} -> {payload['href']}")
+            created += 1
+            if board_id and app_id:
+                try:
+                    place(board_id, app_id, len(existing) + created - 1)
+                except HomarrError as err:
+                    log(f"  ! placement failed ({err}); drag the app onto the board once instead")
+        log(f"summary: {created} created, {unchanged} already present")
+        return 0
+
+
+    if __name__ == "__main__":
+        try:
+            sys.exit(main())
+        except HomarrError as error:
+            log(f"ERROR: {error}")
+            sys.exit(1)

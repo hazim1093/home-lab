@@ -25,5 +25,7 @@ resources:
 - grafana-dashboards.yaml
 - kube-state-metrics.yaml
 - node-exporter.yaml
+- hajimari.yaml
+- homarr.yaml
 - private-apps.yaml
 - apps.yaml

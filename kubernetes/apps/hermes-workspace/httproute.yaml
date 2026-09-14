@@ -10,6 +10,7 @@ metadata:
       interval: 60s
       conditions:
         - "[STATUS] == 200 || [STATUS] == 302"
+    homarr.synced/name: "Hermes Workspace"
 spec:
   parentRefs:
   - name: traefik-gateway
