@@ -12,6 +12,11 @@ on:
     paths:
       - 'kubernetes/components/**'
 
+# A called workflow can only use scopes the caller declares; without this the
+# nested job is left with none and the run fails at startup.
+permissions:
+  contents: read
+
 jobs:
   validate:
     uses: hazim1093/ci/.github/workflows/k8s-validation.yml@main
