@@ -72,8 +72,7 @@ home-lab/
 │       ├── rustdesk/                # Remote desktop
 │       ├── gatus/                   # Health monitoring
 │       ├── hajimari/                # Hajimari dashboard (static app list)
-│       ├── homarr/                  # Homarr dashboard + HTTPRoute app sync
-│       ├── homarr-controller/       # Syncs annotated HTTPRoutes onto the Homarr board
+│       ├── homarr/                  # Homarr dashboard (board tiles: editor/API, homarr.dev/* annotations)
 │       ├── external-dns/            # Automatic DNS management
 │       └── renovate/                # Dependency updates
 ├── hallon/                          # Raspberry Pi management
