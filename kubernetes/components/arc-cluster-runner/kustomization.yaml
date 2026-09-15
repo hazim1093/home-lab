@@ -4,4 +4,5 @@ resources:
   - secret.yaml
   - rbac.yaml
   - helmrelease.yaml
+  - helmrelease-khutba-notes.yaml
   - pull-secret.yaml
