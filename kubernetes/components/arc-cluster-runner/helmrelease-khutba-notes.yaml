@@ -1,7 +1,9 @@
+# Personal accounts have no account-level runners (only orgs do): one scale set
+# per repo, sharing the arc-cluster-runner label so workflows stay unchanged.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: arc-cluster-runner
+  name: arc-cluster-runner-khutba-notes
   namespace: arc-system
 spec:
   interval: 12h
@@ -18,11 +20,13 @@ spec:
         namespace: flux-system
       interval: 12h
   values:
-    # Personal accounts have no account-level runners (only orgs do), so each repo
-    # that needs CI runners gets its own scale set — see helmrelease-khutba-notes.yaml.
-    githubConfigUrl: "https://github.com/hazim1093/screener-rag"
+    githubConfigUrl: "https://github.com/hazim1093/khutba-notes"
     githubConfigSecret: arc-cluster-runner-secret
-    runnerScaleSetName: arc-cluster-runner
+    # Distinct scale-set name (the AutoscalingRunnerSet is named after it, so it
+    # must not collide with the screener-rag one) + the shared runner label.
+    runnerScaleSetName: arc-cluster-runner-khutba-notes
+    scaleSetLabels:
+      - arc-cluster-runner
     minRunners: 0
     maxRunners: 1
     template:
