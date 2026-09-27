@@ -10,7 +10,7 @@ Status: **draft, pending approval**. Once approved, implement on branch `claude/
 | Database | **SQLite** | One user, low concurrency. Saves running a Postgres pod and a second thing to back up. The backup uses Paperless's own exporter, which doesn't depend on the database engine, so moving to Postgres later is just an export and import. |
 | Broker | **Valkey** (Redis-compatible), no persistence | Paperless requires it for Celery. It only holds the task queue, so there's nothing to back up. |
 | Office/email parsing | **None** (no Tika or Gotenberg) | PDFs and images only. Can be added later. |
-| OCR | `eng+swe` | Swedish isn't bundled in the image. `PAPERLESS_OCR_LANGUAGES=swe` installs it when the container starts, so startup needs network access. |
+| OCR | `eng+swe`, with `swe.traineddata` stored on the data PVC | Swedish isn't bundled in the image. The built-in `PAPERLESS_OCR_LANGUAGES=swe` would `apt-get install` it on **every** start, which is slow and fails if Debian mirrors are unreachable. Instead an init container downloads the file once to the PVC, and it's mounted into tesseract's tessdata dir. |
 | Timezone | `Europe/Stockholm` | Matches homarr, hajimari and hallon. |
 | Hostname | `paperless.${LOCAL_DOMAIN}` via the `websecure` listener | external-dns creates the PiHole record from the HTTPRoute. |
 | Storage | `local-path` PVCs | Cluster default. The PVs are pinned to a node, so the backup Job lands on the same node as the app. |
@@ -53,7 +53,12 @@ Then add `- paperless` to `kubernetes/apps/kustomization.yaml`.
 - Image `ghcr.io/paperless-ngx/paperless-ngx:<latest 2.x release, pinned>`. Look up the current release; don't use `latest`.
 - `replicas: 1` and `strategy: Recreate` (SQLite and RWO volumes).
 - `annotations: reloader.stakater.com/auto: "true"`, following hermes.
-- `envFrom`: `paperless-config` ConfigMap and `paperless-secrets` Secret. Also set `PAPERLESS_OCR_LANGUAGES=swe` here only, not in the CronJob.
+- `envFrom`: `paperless-config` ConfigMap and `paperless-secrets` Secret. Do **not** set `PAPERLESS_OCR_LANGUAGES`.
+- **Swedish OCR data** (stored on the volume, no apt at startup):
+  - initContainer `fetch-tessdata` (`busybox:<pinned>`) mounts the data PVC. If `/usr/src/paperless/data/tessdata/swe.traineddata` is missing, it downloads it from `https://github.com/tesseract-ocr/tessdata_fast/raw/<pinned tag, e.g. 4.1.0>/swe.traineddata` to a temp file, then `mv`s it into place so a partial download never lands. After the first start this is a no-op, with no network needed.
+  - Mount it into the paperless container with a **single-file** `subPath` (`subPath: tessdata/swe.traineddata`, mounted at `<tessdata dir>/swe.traineddata`). Mounting the whole dir would hide the bundled `eng`/`osd` data.
+  - Verify the tessdata dir inside the pinned image first (expected `/usr/share/tesseract-ocr/5/tessdata`; check the upstream Dockerfile or `tesseract --list-langs`). Use `tessdata_fast`, which is what Debian's `tesseract-ocr-swe` package ships.
+  - To bump the language data later, change the pinned tag and delete the file on the PVC.
 - Mounts: data, media, consume, and export at `/usr/src/paperless/export`.
 - Port 8000. Readiness and liveness via `httpGet /` on 8000, with `initialDelaySeconds` of about 60, because the first start runs migrations and the apt install.
 - Resources: requests `cpu: 100m, memory: 512Mi`; limit `memory: 2Gi`. OCR is memory-hungry.
