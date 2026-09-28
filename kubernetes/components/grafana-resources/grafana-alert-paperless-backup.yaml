@@ -1,0 +1,60 @@
+# Alerts if the nightly Paperless backup CronJob (kubernetes/apps/paperless)
+# hasn't completed successfully in the last 36h — covers both a broken
+# backup and one that's never run at all (noDataState: Alerting).
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaAlertRuleGroup
+metadata:
+  name: paperless-backup
+  namespace: grafana-operator
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana-cloud
+  folderRef: alerts
+  interval: 10m
+  name: paperless
+  rules:
+  - uid: paperless-backup-stale
+    title: Paperless backup hasn't succeeded recently
+    condition: C
+    for: 0s
+    noDataState: Alerting
+    execErrState: Error
+    notificationSettings:
+      receiver: slack
+    labels:
+      severity: warning
+      namespace: paperless
+    annotations:
+      summary: No successful Paperless backup in the last 36 hours
+      description: "The paperless-backup CronJob hasn't reported a successful run in over 36h. Check: kubectl -n paperless get jobs,pods"
+    data:
+    - refId: A
+      datasourceUid: grafanacloud-prom
+      relativeTimeRange:
+        from: 300
+        to: 0
+      model:
+        editorMode: code
+        expr: (time() - max(kube_cronjob_status_last_successful_time{namespace="paperless", cronjob="paperless-backup"})) > (36 * 3600)
+        instant: true
+        queryType: instant
+        refId: A
+    - refId: B
+      datasourceUid: __expr__
+      model:
+        type: reduce
+        expression: A
+        reducer: last
+        refId: B
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        type: threshold
+        expression: B
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+        refId: C

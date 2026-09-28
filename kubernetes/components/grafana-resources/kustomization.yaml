@@ -9,3 +9,4 @@ resources:
   - grafana-contactpoint-slack.yaml
   - grafana-folder-alerts.yaml
   - grafana-alert-hermes-openrouter-limit.yaml
+  - grafana-alert-paperless-backup.yaml

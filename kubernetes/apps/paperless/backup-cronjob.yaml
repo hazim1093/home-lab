@@ -1,0 +1,99 @@
+# Nightly backup: an initContainer runs Paperless's own `document_exporter`
+# into the export PVC (a portable dump: documents, thumbnails, and a JSON
+# manifest of the DB contents — restorable with `document_importer` on any
+# Paperless version, regardless of DB engine), then the restic container
+# pushes that export to Cloudflare R2 (encrypted, deduplicated, versioned).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: paperless-backup
+  namespace: paperless
+spec:
+  schedule: "30 2 * * *"
+  timeZone: Europe/Stockholm
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          initContainers:
+          # Does not override the image's ENTRYPOINT (s6-overlay /init) —
+          # only `args` is set, exactly like upstream's documented
+          # `docker compose run --rm webserver document_exporter ../export`.
+          # s6 runs this as a one-shot command (no gunicorn/celery started)
+          # and exits when it's done.
+          - name: export
+            image: ghcr.io/paperless-ngx/paperless-ngx:3.2.1
+            args:
+            - "document_exporter"
+            - "/usr/src/paperless/export"
+            - "--delete"
+            - "--no-progress-bar"
+            envFrom:
+            - configMapRef:
+                name: paperless-config
+            - secretRef:
+                name: paperless-secrets
+            volumeMounts:
+            - name: data
+              mountPath: /usr/src/paperless/data
+            - name: media
+              mountPath: /usr/src/paperless/media
+            - name: export
+              mountPath: /usr/src/paperless/export
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+          containers:
+          - name: restic
+            image: restic/restic:0.19.1
+            envFrom:
+            - secretRef:
+                name: paperless-backup-secret
+            env:
+            - name: RESTIC_CACHE_DIR
+              value: /cache
+            volumeMounts:
+            - name: export
+              mountPath: /export
+              readOnly: true
+            - name: restic-cache
+              mountPath: /cache
+            command: ["sh", "-c"]
+            args:
+            - |
+              set -eu
+              restic snapshots >/dev/null 2>&1 || restic init
+              restic backup /export --host paperless --tag paperless
+              restic forget --host paperless --tag paperless \
+                --keep-daily 7 --keep-weekly 4 --keep-monthly 12 --prune
+              # Weekly deep integrity check (Sundays only) — cheap nightly
+              # runs skip this, `restic backup` already verifies what it writes.
+              if [ "$(date +%u)" = "7" ]; then
+                restic check --read-data-subset=5%
+              fi
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+          volumes:
+          - name: data
+            persistentVolumeClaim:
+              claimName: paperless-data
+          - name: media
+            persistentVolumeClaim:
+              claimName: paperless-media
+          - name: export
+            persistentVolumeClaim:
+              claimName: paperless-export
+          - name: restic-cache
+            emptyDir: {}
