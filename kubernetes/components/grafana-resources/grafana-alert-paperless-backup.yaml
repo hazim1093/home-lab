@@ -1,6 +1,5 @@
-# Alerts if the nightly Paperless backup CronJob (kubernetes/apps/paperless)
-# hasn't completed successfully in the last 36h — covers both a broken
-# backup and one that's never run at all (noDataState: Alerting).
+# Alerts if the paperless-backup CronJob hasn't succeeded in 36h,
+# including if it's never run at all.
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaAlertRuleGroup
 metadata:

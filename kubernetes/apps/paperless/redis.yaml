@@ -1,7 +1,4 @@
-# Dedicated Valkey instance for Paperless's Celery task queue only. Not
-# shared with other apps: it needs no persistence, no auth (network-policy
-# scoped instead), and nothing in it is worth backing up — losing it just
-# means in-flight consume/OCR tasks get re-queued on next start.
+# Dedicated Valkey for Paperless's task queue only — no persistence needed.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

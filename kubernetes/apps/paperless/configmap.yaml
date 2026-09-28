@@ -9,9 +9,8 @@ data:
   # Needed for CSRF/allowed-hosts checks to pass behind Traefik.
   PAPERLESS_URL: "https://paperless.${LOCAL_DOMAIN}"
   PAPERLESS_TIME_ZONE: "Europe/Stockholm"
-  # eng is bundled in the image; swe is fetched onto the data PVC by the
-  # fetch-tessdata init container in deployment.yaml — do not set
-  # PAPERLESS_OCR_LANGUAGES here, that would apt-get install it on every start.
+  # swe is fetched onto the data PVC by fetch-tessdata (deployment.yaml) —
+  # do not set PAPERLESS_OCR_LANGUAGES, that apt-get installs it on every start.
   PAPERLESS_OCR_LANGUAGE: "eng+swe"
   # inotify is unreliable on some volume backends; poll instead.
   PAPERLESS_CONSUMER_POLLING: "60"

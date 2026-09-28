@@ -1,8 +1,5 @@
-# Nightly backup: an initContainer runs Paperless's own `document_exporter`
-# into the export PVC (a portable dump: documents, thumbnails, and a JSON
-# manifest of the DB contents — restorable with `document_importer` on any
-# Paperless version, regardless of DB engine), then the restic container
-# pushes that export to Cloudflare R2 (encrypted, deduplicated, versioned).
+# Nightly: document_exporter dumps Paperless into the export PVC, then
+# restic pushes that dump to Cloudflare R2.
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -21,11 +18,8 @@ spec:
         spec:
           restartPolicy: Never
           initContainers:
-          # Does not override the image's ENTRYPOINT (s6-overlay /init) —
-          # only `args` is set, exactly like upstream's documented
-          # `docker compose run --rm webserver document_exporter ../export`.
-          # s6 runs this as a one-shot command (no gunicorn/celery started)
-          # and exits when it's done.
+          # Only `args` is set (not `command`), so the image's s6 ENTRYPOINT
+          # runs this as a one-shot command instead of starting the full app.
           - name: export
             image: ghcr.io/paperless-ngx/paperless-ngx:3.2.1
             args:
@@ -74,8 +68,7 @@ spec:
               restic backup /export --host paperless --tag paperless
               restic forget --host paperless --tag paperless \
                 --keep-daily 7 --keep-weekly 4 --keep-monthly 12 --prune
-              # Weekly deep integrity check (Sundays only) — cheap nightly
-              # runs skip this, `restic backup` already verifies what it writes.
+              # Deep integrity check, Sundays only.
               if [ "$(date +%u)" = "7" ]; then
                 restic check --read-data-subset=5%
               fi

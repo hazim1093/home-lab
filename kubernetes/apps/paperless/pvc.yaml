@@ -1,6 +1,4 @@
-# paperless-data: SQLite DB, search index, classifier model, thumbnails, and
-# the on-disk Swedish tessdata file fetched by the init container (see
-# deployment.yaml). Small, but the search index can grow with the archive.
+# SQLite DB, search index, classifier model, tessdata.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -14,8 +12,7 @@ spec:
       storage: 2Gi
   storageClassName: local-path
 ---
-# paperless-media: the actual documents (originals + generated archive PDFs +
-# thumbnails). This is the volume that matters most for the backup.
+# The documents themselves — the volume that matters most for the backup.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -29,8 +26,7 @@ spec:
       storage: 30Gi
   storageClassName: local-path
 ---
-# paperless-consume: drop-folder for new documents. Kept small — files are
-# moved out (into media) once consumed.
+# Drop-folder for new documents.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -44,10 +40,7 @@ spec:
       storage: 2Gi
   storageClassName: local-path
 ---
-# paperless-export: scratch space for the nightly `document_exporter` dump
-# that the backup CronJob then feeds to restic. Not a substitute for the
-# backup itself — it's local-path (single node, no redundancy) and is
-# overwritten in place every night.
+# Scratch space for the nightly export; not a backup by itself.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
