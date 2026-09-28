@@ -14,12 +14,7 @@ spec:
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: paperless
+    # The KEDA interceptor connects to the pod directly (not via the Service).
     - namespaceSelector:
         matchLabels:
-          kubernetes.io/metadata.name: traefik
-    - namespaceSelector:
-        matchLabels:
-          kubernetes.io/metadata.name: gatus
-    - namespaceSelector:
-        matchLabels:
-          kubernetes.io/metadata.name: homarr
+          kubernetes.io/metadata.name: keda-http

@@ -1,6 +1,7 @@
 # Paperless-ngx
 
-`https://paperless.${LOCAL_DOMAIN}`
+`https://paperless.${LOCAL_DOMAIN}` — scales 0↔1 on demand via KEDA HTTP
+(`httpscaledobject.yaml`); first request after idle is slow.
 
 ## First-time setup
 
@@ -32,10 +33,10 @@ kubectl -n paperless run restic-cli --rm -it --restart=Never \
 
 ## Restore
 
-1. `kubectl -n paperless scale deploy/paperless --replicas=0`
+1. Pin it down (KEDA owns `replicas` directly): `kubectl -n paperless patch httpscaledobject paperless --type merge -p '{"spec":{"replicas":{"min":0,"max":0}}}'`
 2. Restic-restore the chosen snapshot into the `paperless-export` PVC.
 3. Run `document_importer /usr/src/paperless/export` in a one-off pod with
    `data`/`media`/`export` mounted and `paperless-config`/`paperless-secrets` as env.
-4. `kubectl -n paperless scale deploy/paperless --replicas=1`
+4. Restore normal scaling: `kubectl -n paperless patch httpscaledobject paperless --type merge -p '{"spec":{"replicas":{"min":0,"max":1}}}'`
 
 Test this after the first successful backup — an untested backup isn't one.

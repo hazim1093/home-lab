@@ -6,7 +6,7 @@ metadata:
   annotations:
     reloader.stakater.com/auto: "true"
 spec:
-  replicas: 1
+  # No replicas field: KEDA's HTTPScaledObject owns this.
   strategy:
     # SQLite + RWO volumes: no rolling update, only one writer at a time.
     type: Recreate
