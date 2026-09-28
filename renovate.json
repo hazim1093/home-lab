@@ -10,10 +10,7 @@
     "managerFilePatterns": ["/^kubernetes\\/bootstrap\\/flux\\/.+\\.tf$/"]
   },
   "kubernetes": {
-    "managerFilePatterns": [
-      "/^kubernetes\\/components\\/.+\\.yaml$/",
-      "/^kubernetes\\/apps\\/paperless\\/.+\\.yaml$/"
-    ],
+    "managerFilePatterns": ["/^kubernetes\\/components\\/.+\\.yaml$/"],
     "ignorePaths": [
       "kubernetes/components/flux-system/**"
     ]

@@ -1,0 +1,17 @@
+# Scratch space for the nightly `document_exporter` dump that the backup
+# CronJob (backup-cronjob.yaml) then feeds to restic. Not mounted by the
+# paperless/paperless-redis HelmRelease — only by the CronJob. Not a
+# substitute for the backup itself — it's local-path (single node, no
+# redundancy) and is overwritten in place every night.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: paperless-export
+  namespace: paperless
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 30Gi
+  storageClassName: local-path
