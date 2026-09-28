@@ -1,0 +1,91 @@
+# Nightly: document_exporter dumps Paperless into the export PVC, then
+# restic pushes that dump to Cloudflare R2.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: paperless-backup
+  namespace: paperless
+spec:
+  schedule: "30 2 * * *"
+  timeZone: Europe/Stockholm
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          initContainers:
+          # Only `args` is set (not `command`), so the image's s6 ENTRYPOINT
+          # runs this as a one-shot command instead of starting the full app.
+          - name: export
+            image: ghcr.io/paperless-ngx/paperless-ngx:3.2.1
+            args:
+            - "document_exporter"
+            - "/usr/src/paperless/export"
+            - "--delete"
+            - "--no-progress-bar"
+            envFrom:
+            - configMapRef:
+                name: paperless-config
+            - secretRef:
+                name: paperless-secrets
+            volumeMounts:
+            - name: data
+              mountPath: /usr/src/paperless/data
+            - name: media
+              mountPath: /usr/src/paperless/media
+            - name: export
+              mountPath: /usr/src/paperless/export
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+          containers:
+          - name: restic
+            image: restic/restic:0.19.1
+            envFrom:
+            - secretRef:
+                name: paperless-backup-secret
+            env:
+            - name: RESTIC_CACHE_DIR
+              value: /cache
+            volumeMounts:
+            - name: export
+              mountPath: /export
+              readOnly: true
+            - name: restic-cache
+              mountPath: /cache
+            command: ["sh", "-c"]
+            args:
+            - |
+              set -eu
+              restic snapshots >/dev/null 2>&1 || restic init
+              restic backup /export --host paperless --tag paperless
+              restic forget --host paperless --tag paperless \
+                --keep-daily 7 --keep-weekly 4 --keep-monthly 12 --prune
+              if [ "$(date +%u)" = "7" ]; then
+                restic check --read-data-subset=5%
+              fi
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+          volumes:
+          - name: data
+            persistentVolumeClaim:
+              claimName: paperless-data
+          - name: media
+            persistentVolumeClaim:
+              claimName: paperless-media
+          - name: export
+            persistentVolumeClaim:
+              claimName: paperless-export
+          - name: restic-cache
+            emptyDir: {}

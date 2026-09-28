@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: paperless-restrict-ingress
+  namespace: paperless
+spec:
+  podSelector:
+    matchLabels:
+      app: paperless
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: paperless
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: gatus
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: homarr
