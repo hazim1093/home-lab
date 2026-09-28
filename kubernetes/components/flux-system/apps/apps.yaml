@@ -21,3 +21,4 @@ spec:
       name: domain-config
   dependsOn:
   - name: traefik
+  - name: keda-http

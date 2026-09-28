@@ -1,21 +1,19 @@
+# No gatus/homarr periodic health check here: paperless scales to 0 when
+# idle (httpscaledobject.yaml), so a periodic ping would either keep it
+# perpetually awake or falsely alert "down" while idle. homarr.dev/url below
+# still gives it a dashboard tile — clicking it is real traffic, and it wakes
+# the app the way any other visit does.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: paperless
   namespace: paperless
   annotations:
-    gatus.home-operations.com/enabled: "true"
-    gatus.home-operations.com/endpoint: |
-      url: "http://paperless.paperless.svc.cluster.local:8000"
-      interval: 60s
-      conditions:
-        - "[STATUS] == 200"
     homarr.dev/enabled: "true"
     homarr.dev/category: "Homelab Apps"
     homarr.dev/name: "Paperless"
     homarr.dev/url: "https://paperless.${LOCAL_DOMAIN}"
     homarr.dev/icon: "paperless-ngx"
-    homarr.dev/ping-url: "http://paperless.paperless.svc.cluster.local:8000"
 spec:
   parentRefs:
   - name: traefik-gateway
@@ -28,6 +26,9 @@ spec:
     - path:
         type: PathPrefix
         value: /
+    # Routes through the KEDA HTTP interceptor instead of the paperless
+    # Service directly, so a request triggers scale-up from 0.
     backendRefs:
-    - name: paperless
-      port: 8000
+    - name: keda-add-ons-http-interceptor-proxy
+      namespace: keda-http
+      port: 8080

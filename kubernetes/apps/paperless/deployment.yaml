@@ -6,7 +6,8 @@ metadata:
   annotations:
     reloader.stakater.com/auto: "true"
 spec:
-  replicas: 1
+  # No replicas field: KEDA's HTTPScaledObject owns this (0<->1), and Flux
+  # re-asserting a fixed count here would fight it on every reconcile.
   strategy:
     # SQLite + RWO volumes: no rolling update, only one writer at a time.
     type: Recreate

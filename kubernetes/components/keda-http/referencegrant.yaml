@@ -12,6 +12,9 @@ spec:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     namespace: screener
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    namespace: paperless
   to:
   - group: ""
     kind: Service
