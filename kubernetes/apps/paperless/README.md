@@ -1,35 +1,28 @@
 # Paperless-ngx
 
 Document management at `https://paperless.${LOCAL_DOMAIN}`. SQLite database, single replica.
-Deployed via [bjw-s/app-template](https://github.com/bjw-s-labs/helm-charts) (`helmrelease.yaml`)
-— the generic chart the home-operations/homelab community uses instead of a paperless-specific
-chart (none is officially maintained). Two controllers in that one release: `paperless` (the app)
-and `paperless-redis` (a dedicated Valkey broker, no persistence — nothing in it is worth backing
-up). The HTTPRoute, NetworkPolicy and backup CronJob are plain manifests alongside the release,
-not part of the chart values.
-
 Backed by four `local-path` PVCs (single node, no redundancy — see **Backups** below for
 the actual offsite copy):
 
-| PVC | Created by | Contents |
-|---|---|---|
-| `paperless-data` | HelmRelease (`persistence.data`) | SQLite DB, search index, classifier model, Swedish tessdata |
-| `paperless-media` | HelmRelease (`persistence.media`) | Documents (originals + generated archives + thumbnails) — the important one |
-| `paperless-consume` | HelmRelease (`persistence.consume`) | Drop folder for new documents |
-| `paperless-export` | `pvc.yaml` (standalone) | Scratch space for the nightly export (see below), not a backup by itself — used only by the backup CronJob, not mounted by the app |
+| PVC | Contents |
+|---|---|
+| `paperless-data` | SQLite DB, search index, classifier model, Swedish tessdata |
+| `paperless-media` | Documents (originals + generated archives + thumbnails) — the important one |
+| `paperless-consume` | Drop folder for new documents |
+| `paperless-export` | Scratch space for the nightly export (see below), not a backup by itself |
 
 ## First-time setup
 
 1. Fill in the R2 credentials (see **Backups**).
 2. Log in at `https://paperless.${LOCAL_DOMAIN}` with the username/password from
-   `secret.yaml` (`sops -d kubernetes/components/paperless/secret.yaml`).
+   `secret.yaml` (`sops -d kubernetes/apps/paperless/secret.yaml`).
 
 ## Adding documents
 
 - Upload via the web UI, or
 - Drop a file into the consume PVC:
   ```bash
-  kubectl -n paperless cp ./scan.pdf $(kubectl -n paperless get pod -l app.kubernetes.io/controller=paperless -o jsonpath='{.items[0].metadata.name}'):/usr/src/paperless/consume/scan.pdf
+  kubectl -n paperless cp ./scan.pdf $(kubectl -n paperless get pod -l app=paperless -o jsonpath='{.items[0].metadata.name}'):/usr/src/paperless/consume/scan.pdf
   ```
   Paperless polls the consume folder every 60s (`PAPERLESS_CONSUMER_POLLING`) and removes
   the file once it's been consumed into `media`.
@@ -44,7 +37,7 @@ directory as a single file. This avoids `PAPERLESS_OCR_LANGUAGES=swe`, which wou
 If Paperless is bumped to an image built on a different Debian base and the
 `verify-tessdata-path` init container starts failing, the tessdata directory has moved.
 Find the new path and update both the `verify-tessdata-path` check and the `subPath`
-mount in `helmrelease.yaml` (`persistence.data.advancedMounts`):
+mount in `deployment.yaml`:
 ```bash
 kubectl -n paperless run tessdata-check --rm -it --restart=Never \
   --image=ghcr.io/paperless-ngx/paperless-ngx:<tag> -- find / -xdev -name eng.traineddata
@@ -70,7 +63,7 @@ succeeded in 36 hours.
    to **that bucket only**, with Object Read & Write.
 2. Fill in the placeholders:
    ```bash
-   sops kubernetes/components/paperless/backup-secret.yaml
+   sops kubernetes/apps/paperless/backup-secret.yaml
    ```
    - `RESTIC_REPOSITORY`: `s3:https://<ACCOUNT_ID>.r2.cloudflarestorage.com/<BUCKET>`
    - `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`: the R2 token's key pair
@@ -101,10 +94,9 @@ restic snapshots
 Restoring rebuilds Paperless from a snapshot. Do a **test restore** after the first
 successful backup — an untested backup is not a backup.
 
-1. Scale Paperless down (SQLite must not be written to during restore). The chart names
-   the Deployment after the release/controller, but use the label selector to be safe:
+1. Scale Paperless down (SQLite must not be written to during restore):
    ```bash
-   kubectl -n paperless scale deploy -l app.kubernetes.io/controller=paperless --replicas=0
+   kubectl -n paperless scale deploy/paperless --replicas=0
    ```
 2. Restore the chosen snapshot into the export PVC with a one-off restic pod (mount
    `paperless-export` at `/export`, `paperless-backup-secret` via `envFrom`):
@@ -122,7 +114,7 @@ successful backup — an untested backup is not a backup.
    ```
 4. Scale Paperless back up:
    ```bash
-   kubectl -n paperless scale deploy -l app.kubernetes.io/controller=paperless --replicas=1
+   kubectl -n paperless scale deploy/paperless --replicas=1
    ```
 
 ### Full disaster recovery (new cluster)
@@ -138,10 +130,3 @@ successful backup — an untested backup is not a backup.
   Hermes agent can decrypt `secret.yaml` and `backup-secret.yaml` like every other secret
   in this repo.
 - No Tika/Gotenberg: only PDFs and images are OCR'd, no Office docs or `.eml` files.
-- The `helmrelease.yaml` values weren't dry-run rendered against the live `app-template`
-  chart before merge (no `helm` in the environment this was written in). After Flux
-  reconciles for the first time, sanity-check with `flux get helmrelease -n paperless` and
-  `kubectl -n paperless get deploy,svc,pvc,pods` — in particular confirm both controllers
-  came up (`paperless` and `paperless-redis`) and that the tessdata `subPath` mount landed
-  correctly (`kubectl -n paperless exec deploy/... -- tesseract --list-langs` should list
-  `eng` and `swe`).

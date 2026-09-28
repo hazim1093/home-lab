@@ -3,9 +3,12 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - pvc.yaml
+  - configmap.yaml
   - secret.yaml
   - backup-secret.yaml
-  - helmrelease.yaml
+  - redis.yaml
+  - deployment.yaml
+  - service.yaml
   - httproute.yaml
   - networkpolicy.yaml
   - backup-cronjob.yaml

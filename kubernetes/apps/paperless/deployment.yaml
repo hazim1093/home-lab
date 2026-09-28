@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paperless
+  namespace: paperless
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  strategy:
+    # SQLite + RWO volumes: no rolling update, only one writer at a time.
+    type: Recreate
+  selector:
+    matchLabels:
+      app: paperless
+  template:
+    metadata:
+      labels:
+        app: paperless
+    spec:
+      # Avoid PAPERLESS_* env vars injected for the "paperless" Service
+      # (e.g. PAPERLESS_PORT) shadowing the app's own PAPERLESS_* config vars.
+      enableServiceLinks: false
+      initContainers:
+      # Fetches Swedish tessdata onto the data PVC once, instead of relying
+      # on PAPERLESS_OCR_LANGUAGES (which would apt-get install it on every
+      # container start — slow, and fails without network at boot).
+      - name: fetch-tessdata
+        image: busybox:1.38
+        volumeMounts:
+        - name: data
+          mountPath: /usr/src/paperless/data
+        command: ["sh", "-c"]
+        args:
+        - |
+          set -eu
+          DEST=/usr/src/paperless/data/tessdata/swe.traineddata
+          if [ -s "$DEST" ]; then
+            echo "swe.traineddata already present"
+            exit 0
+          fi
+          mkdir -p /usr/src/paperless/data/tessdata
+          echo "downloading swe.traineddata..."
+          wget -qO "$DEST.tmp" \
+            https://github.com/tesseract-ocr/tessdata_fast/raw/4.1.0/swe.traineddata
+          mv "$DEST.tmp" "$DEST"
+          echo "swe.traineddata installed"
+      # Fails loudly (instead of silently OCR-ing English-only) if the
+      # pinned image's tessdata directory ever moves from the Debian-standard
+      # path assumed below. If this ever fails after a version bump, find the
+      # real path with `tesseract --list-langs` / `find / -name eng.traineddata`
+      # inside the image and update both this check and the volumeMount below.
+      - name: verify-tessdata-path
+        image: ghcr.io/paperless-ngx/paperless-ngx:3.2.1
+        command: ["sh", "-c"]
+        args:
+        - |
+          set -eu
+          if [ ! -f /usr/share/tesseract-ocr/5/tessdata/eng.traineddata ]; then
+            echo "ERROR: expected tessdata dir /usr/share/tesseract-ocr/5/tessdata not found in this image." >&2
+            echo "Update the tessdata volumeMount path in deployment.yaml." >&2
+            exit 1
+          fi
+      containers:
+      - name: paperless
+        image: ghcr.io/paperless-ngx/paperless-ngx:3.2.1
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: paperless-config
+        - secretRef:
+            name: paperless-secrets
+        ports:
+        - containerPort: 8000
+          name: http
+        volumeMounts:
+        - name: data
+          mountPath: /usr/src/paperless/data
+        - name: media
+          mountPath: /usr/src/paperless/media
+        - name: consume
+          mountPath: /usr/src/paperless/consume
+        # Single-file mount: only swe.traineddata is overlaid, the bundled
+        # eng/osd data that ships in the image stays in place.
+        - name: data
+          mountPath: /usr/share/tesseract-ocr/5/tessdata/swe.traineddata
+          subPath: tessdata/swe.traineddata
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 6
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 90
+          periodSeconds: 30
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            memory: 2Gi
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: paperless-data
+      - name: media
+        persistentVolumeClaim:
+          claimName: paperless-media
+      - name: consume
+        persistentVolumeClaim:
+          claimName: paperless-consume

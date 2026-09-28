@@ -1,0 +1,55 @@
+# Dedicated Valkey instance for Paperless's Celery task queue only. Not
+# shared with other apps: it needs no persistence, no auth (network-policy
+# scoped instead), and nothing in it is worth backing up — losing it just
+# means in-flight consume/OCR tasks get re-queued on next start.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paperless-redis
+  namespace: paperless
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: paperless-redis
+  template:
+    metadata:
+      labels:
+        app: paperless-redis
+    spec:
+      containers:
+      - name: valkey
+        image: docker.io/valkey/valkey:9.1.2-alpine
+        ports:
+        - containerPort: 6379
+          name: valkey
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            memory: 128Mi
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 2
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: paperless-redis
+  namespace: paperless
+spec:
+  selector:
+    app: paperless-redis
+  ports:
+  - port: 6379
+    targetPort: 6379
