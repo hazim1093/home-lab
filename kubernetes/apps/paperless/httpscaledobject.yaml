@@ -1,6 +1,4 @@
-# Scales paperless 0<->1 based on HTTP traffic arriving via the KEDA HTTP
-# interceptor (see httproute.yaml, which routes there instead of the Service
-# directly).
+# Scales paperless 0<->1 based on traffic through the KEDA HTTP interceptor.
 apiVersion: http.keda.sh/v1alpha1
 kind: HTTPScaledObject
 metadata:

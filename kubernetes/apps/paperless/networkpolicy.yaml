@@ -14,9 +14,7 @@ spec:
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: paperless
-    # The KEDA HTTP interceptor connects to the pod directly (direct pod
-    # routing), not via the Service — traefik no longer talks to this
-    # namespace at all (see httproute.yaml).
+    # The KEDA interceptor connects to the pod directly (not via the Service).
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: keda-http

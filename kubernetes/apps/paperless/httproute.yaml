@@ -1,8 +1,5 @@
-# No gatus/homarr periodic health check here: paperless scales to 0 when
-# idle (httpscaledobject.yaml), so a periodic ping would either keep it
-# perpetually awake or falsely alert "down" while idle. homarr.dev/url below
-# still gives it a dashboard tile — clicking it is real traffic, and it wakes
-# the app the way any other visit does.
+# No gatus/homarr health check: paperless scales to 0 when idle, and a
+# periodic ping would keep it awake or falsely alert "down".
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -26,8 +23,7 @@ spec:
     - path:
         type: PathPrefix
         value: /
-    # Routes through the KEDA HTTP interceptor instead of the paperless
-    # Service directly, so a request triggers scale-up from 0.
+    # Routes via the KEDA interceptor, not the paperless Service, to scale up on demand.
     backendRefs:
     - name: keda-add-ons-http-interceptor-proxy
       namespace: keda-http
