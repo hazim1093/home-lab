@@ -5,6 +5,7 @@ resources:
   - grafana-instance.yaml
   - dashboards-dotdc.yaml
   - dashboard-top-workloads.yaml
+  - dashboard-node-thermal.yaml
   - grafana-slack-webhook-secret.yaml
   - grafana-contactpoint-slack.yaml
   - grafana-folder-alerts.yaml
