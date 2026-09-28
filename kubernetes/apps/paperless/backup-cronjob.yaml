@@ -68,7 +68,6 @@ spec:
               restic backup /export --host paperless --tag paperless
               restic forget --host paperless --tag paperless \
                 --keep-daily 7 --keep-weekly 4 --keep-monthly 12 --prune
-              # Deep integrity check, Sundays only.
               if [ "$(date +%u)" = "7" ]; then
                 restic check --read-data-subset=5%
               fi

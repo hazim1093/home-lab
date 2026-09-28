@@ -11,19 +11,15 @@ spec:
   - Ingress
   ingress:
   - from:
-    # Same namespace (paperless-redis, backup CronJob pods)
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: paperless
-    # Traefik proxies paperless.${LOCAL_DOMAIN} here
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: traefik
-    # Gatus health-checks the service directly
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: gatus
-    # Homarr pings the service for its tile status
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: homarr

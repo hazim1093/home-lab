@@ -1,132 +1,41 @@
 # Paperless-ngx
 
-Document management at `https://paperless.${LOCAL_DOMAIN}`. SQLite database, single replica.
-Backed by four `local-path` PVCs (single node, no redundancy — see **Backups** below for
-the actual offsite copy):
-
-| PVC | Contents |
-|---|---|
-| `paperless-data` | SQLite DB, search index, classifier model, Swedish tessdata |
-| `paperless-media` | Documents (originals + generated archives + thumbnails) — the important one |
-| `paperless-consume` | Drop folder for new documents |
-| `paperless-export` | Scratch space for the nightly export (see below), not a backup by itself |
+`https://paperless.${LOCAL_DOMAIN}`
 
 ## First-time setup
 
-1. Fill in the R2 credentials (see **Backups**).
-2. Log in at `https://paperless.${LOCAL_DOMAIN}` with the username/password from
-   `secret.yaml` (`sops -d kubernetes/apps/paperless/secret.yaml`).
-
-## Adding documents
-
-- Upload via the web UI, or
-- Drop a file into the consume PVC:
-  ```bash
-  kubectl -n paperless cp ./scan.pdf $(kubectl -n paperless get pod -l app=paperless -o jsonpath='{.items[0].metadata.name}'):/usr/src/paperless/consume/scan.pdf
-  ```
-  Paperless polls the consume folder every 60s (`PAPERLESS_CONSUMER_POLLING`) and removes
-  the file once it's been consumed into `media`.
-
-## Swedish OCR
-
-`swe.traineddata` is fetched once by the `fetch-tessdata` init container onto the
-`paperless-data` PVC (`tessdata/swe.traineddata`) and mounted over the bundled tessdata
-directory as a single file. This avoids `PAPERLESS_OCR_LANGUAGES=swe`, which would
-`apt-get install` the language pack on every pod start.
-
-If Paperless is bumped to an image built on a different Debian base and the
-`verify-tessdata-path` init container starts failing, the tessdata directory has moved.
-Find the new path and update both the `verify-tessdata-path` check and the `subPath`
-mount in `deployment.yaml`:
-```bash
-kubectl -n paperless run tessdata-check --rm -it --restart=Never \
-  --image=ghcr.io/paperless-ngx/paperless-ngx:<tag> -- find / -xdev -name eng.traineddata
-```
-
-## Backups
-
-Nightly at 02:30 Europe/Stockholm, the `paperless-backup` CronJob:
-
-1. Runs Paperless's own `document_exporter` into the `paperless-export` PVC — a portable
-   dump (documents + thumbnails + a JSON manifest of the DB contents) that's restorable
-   with `document_importer` on any Paperless version, independent of DB engine.
-2. Runs `restic backup` on that export directory, pushing to a Cloudflare R2 bucket.
-   Retention: 7 daily / 4 weekly / 12 monthly snapshots, pruned after each run. A
-   `restic check --read-data-subset=5%` integrity check runs every Sunday.
-
-A Grafana alert (`grafana-alert-paperless-backup.yaml`) fires to Slack if no backup has
-succeeded in 36 hours.
-
-### One-time setup (not in Git)
-
-1. In Cloudflare: create an R2 bucket (e.g. `paperless-backup`) and an API token scoped
-   to **that bucket only**, with Object Read & Write.
-2. Fill in the placeholders:
+1. Create an R2 bucket + a scoped API token, then fill in the placeholders:
    ```bash
    sops kubernetes/apps/paperless/backup-secret.yaml
    ```
-   - `RESTIC_REPOSITORY`: `s3:https://<ACCOUNT_ID>.r2.cloudflarestorage.com/<BUCKET>`
-   - `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`: the R2 token's key pair
-   - `RESTIC_PASSWORD` is already generated — **save it in your password manager**. Without
-     it, the backups in R2 cannot be decrypted, even with the R2 credentials.
-3. Commit and push (the file stays SOPS-encrypted).
+   `RESTIC_REPOSITORY`: `s3:https://<ACCOUNT_ID>.r2.cloudflarestorage.com/<BUCKET>`
+2. Log in with the credentials in `secret.yaml` (`sops -d kubernetes/apps/paperless/secret.yaml`).
 
-### Trigger a backup manually
+## Backups
 
+Nightly, `paperless-backup` exports Paperless and pushes it to R2 via restic
+(7 daily / 4 weekly / 12 monthly snapshots). A Grafana alert fires if none
+succeeds in 36h.
+
+Manual run:
 ```bash
 kubectl -n paperless create job --from=cronjob/paperless-backup paperless-backup-manual
-kubectl -n paperless logs -f job/paperless-backup-manual -c restic
 ```
 
-### List snapshots
-
+List snapshots:
 ```bash
 kubectl -n paperless run restic-cli --rm -it --restart=Never \
   --image=restic/restic:0.19.1 \
   --overrides='{"spec":{"containers":[{"name":"restic-cli","image":"restic/restic:0.19.1","envFrom":[{"secretRef":{"name":"paperless-backup-secret"}}],"stdin":true,"tty":true,"command":["sh"]}]}}' \
-  -- sh
-# inside the pod:
-restic snapshots
+  -- sh -c 'restic snapshots'
 ```
 
-### Restore
+## Restore
 
-Restoring rebuilds Paperless from a snapshot. Do a **test restore** after the first
-successful backup — an untested backup is not a backup.
+1. `kubectl -n paperless scale deploy/paperless --replicas=0`
+2. Restic-restore the chosen snapshot into the `paperless-export` PVC.
+3. Run `document_importer /usr/src/paperless/export` in a one-off pod with
+   `data`/`media`/`export` mounted and `paperless-config`/`paperless-secrets` as env.
+4. `kubectl -n paperless scale deploy/paperless --replicas=1`
 
-1. Scale Paperless down (SQLite must not be written to during restore):
-   ```bash
-   kubectl -n paperless scale deploy/paperless --replicas=0
-   ```
-2. Restore the chosen snapshot into the export PVC with a one-off restic pod (mount
-   `paperless-export` at `/export`, `paperless-backup-secret` via `envFrom`):
-   ```bash
-   restic restore <snapshot-id> --target / --include /export
-   ```
-3. Run `document_importer` against the restored export, targeting empty `data`/`media`
-   PVCs (fresh PVCs on a full disaster-recovery rebuild; on a partial restore, clear them
-   first):
-   ```bash
-   kubectl -n paperless run paperless-import --rm -it --restart=Never \
-     --image=ghcr.io/paperless-ngx/paperless-ngx:3.2.1 \
-     --overrides='<mount data, media, export PVCs; envFrom paperless-config + paperless-secrets>' \
-     -- document_importer /usr/src/paperless/export --no-progress-bar
-   ```
-4. Scale Paperless back up:
-   ```bash
-   kubectl -n paperless scale deploy/paperless --replicas=1
-   ```
-
-### Full disaster recovery (new cluster)
-
-1. Restore the SOPS age key (`.age/key.txt`) and re-bootstrap Flux — see the repo root
-   `README.md`.
-2. Flux recreates the namespace, empty PVCs, and all the Paperless resources.
-3. Follow **Restore** above against the latest R2 snapshot.
-
-## Notes
-
-- `.sops.yaml` encrypts to both the primary and the `hermes-agent` age keys, so the
-  Hermes agent can decrypt `secret.yaml` and `backup-secret.yaml` like every other secret
-  in this repo.
-- No Tika/Gotenberg: only PDFs and images are OCR'd, no Office docs or `.eml` files.
+Test this after the first successful backup — an untested backup isn't one.

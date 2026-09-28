@@ -22,7 +22,6 @@ spec:
       # (e.g. PAPERLESS_PORT) shadowing the app's own PAPERLESS_* config vars.
       enableServiceLinks: false
       initContainers:
-      # Fetches Swedish tessdata onto the data PVC once (skipped if present).
       - name: fetch-tessdata
         image: busybox:1.38
         volumeMounts:
