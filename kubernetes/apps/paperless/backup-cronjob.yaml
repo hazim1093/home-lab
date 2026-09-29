@@ -35,6 +35,11 @@ spec:
             volumeMounts:
             - name: data
               mountPath: /usr/src/paperless/data
+            # Same single-file overlay as the Deployment. Without it the s6
+            # system check aborts: "ocr language swe is not installed".
+            - name: data
+              mountPath: /usr/share/tesseract-ocr/5/tessdata/swe.traineddata
+              subPath: tessdata/swe.traineddata
             - name: media
               mountPath: /usr/src/paperless/media
             - name: export
