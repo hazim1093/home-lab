@@ -5,11 +5,13 @@ on:
     branches:
       - main
     paths:
+      - 'kubernetes/apps/**'
       - 'kubernetes/components/**'
   push:
     branches:
       - main
     paths:
+      - 'kubernetes/apps/**'
       - 'kubernetes/components/**'
 
 # A called workflow can only use scopes the caller declares; without this the
@@ -21,4 +23,4 @@ jobs:
   validate:
     uses: hazim1093/ci/.github/workflows/k8s-validation.yml@main
     with:
-      roots: kubernetes/components
+      roots: kubernetes/apps kubernetes/components
