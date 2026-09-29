@@ -28,4 +28,6 @@ resources:
 - hajimari.yaml
 - homarr.yaml
 - private-apps.yaml
-- apps.yaml
+- hermes.yaml
+- hermes-workspace.yaml
+- paperless.yaml

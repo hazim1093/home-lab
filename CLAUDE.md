@@ -274,7 +274,7 @@ There are two ways to deploy applications, depending on whether they use Helm ch
 
 **Use this for**: Custom apps, non-Helm deployments, apps you own (e.g., screener).
 
-A single Flux Kustomization (`apps` in `flux-system`) watches the entire `kubernetes/apps/` directory. It has SOPS decryption and `${LOCAL_DOMAIN}` substitution built in — every app inside inherits these automatically.
+Each app gets its own Flux Kustomization in `flux-system/apps/<app>.yaml` pointing at `kubernetes/apps/<app>`, with SOPS decryption and `${LOCAL_DOMAIN}` substitution. Copy an existing one (e.g. `paperless.yaml`).
 
 **To add a new app:**
 
@@ -287,14 +287,7 @@ A single Flux Kustomization (`apps` in `flux-system`) watches the entire `kubern
    └── httproute.yaml       # can use ${LOCAL_DOMAIN}
    ```
 
-2. Add the directory to `kubernetes/apps/kustomization.yaml`:
-   ```yaml
-   resources:
-   - existing-app
-   - my-app
-   ```
-
-That's it. No new Flux Kustomization needed. SOPS decryption and substitutions work automatically.
+2. Add `flux-system/apps/my-app.yaml` (copy `paperless.yaml`, change name and path) and list it in `flux-system/apps/kustomization.yaml`.
 
 **Encrypting secrets:**
 ```bash
@@ -302,7 +295,7 @@ export SOPS_AGE_KEY_FILE=.age/key.txt
 sops --encrypt --in-place kubernetes/apps/my-app/secret.yaml
 ```
 
-The `apps` Flux Kustomization depends on `traefik`, so HTTPRoutes work out of the box.
+Each app Kustomization depends on `traefik`, so HTTPRoutes work out of the box.
 
 ---
 
