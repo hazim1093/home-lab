@@ -26,6 +26,7 @@ spec:
       enabled: true
       defaultDatabases:
         - _global_changes
+        - obsidian
 
     persistentVolume:
       enabled: true
