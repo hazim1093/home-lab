@@ -17,3 +17,5 @@ resources:
 - hajimari.yaml
 - homarr.yaml
 - home-lab-private.yaml
+- tailscale.yaml
+- couchdb.yaml

@@ -1,0 +1,88 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: couchdb
+  namespace: couchdb
+spec:
+  interval: 12h
+  chart:
+    spec:
+      chart: couchdb
+      version: "4.6.3"
+      sourceRef:
+        kind: HelmRepository
+        name: couchdb
+        namespace: flux-system
+      interval: 12h
+  values:
+    clusterSize: 1
+
+    # Credentials come from the SOPS-encrypted couchdb-credentials secret.
+    createAdminSecret: false
+    extraSecretName: couchdb-credentials
+
+    # Creates _users / _replicator / _global_changes. LiveSync fails without them.
+    autoSetup:
+      enabled: true
+      defaultDatabases:
+        - _global_changes
+
+    persistentVolume:
+      enabled: true
+      storageClass: local-path
+      size: 20Gi
+      accessModes:
+        - ReadWriteOnce
+
+    service:
+      enabled: true
+      type: ClusterIP
+      externalPort: 5984
+      targetPort: 5984
+
+    ingress:
+      enabled: false
+
+    prometheusPort:
+      enabled: true
+      bind_address: "0.0.0.0"
+      port: 17986
+
+    # require_valid_user switches the chart's probes to an authenticated exec
+    # curl; 1s is too tight for that on this hardware.
+    livenessProbe:
+      enabled: true
+      timeoutSeconds: 5
+    readinessProbe:
+      enabled: true
+      timeoutSeconds: 5
+
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 1Gi
+
+    couchdbConfig:
+      couchdb:
+        # Immutable. Changing this forces every client to re-replicate.
+        uuid: 38d5b014336934659356407ae44c3224
+        single_node: true
+        max_document_size: 50000000
+      chttpd:
+        bind_address: any
+        require_valid_user: true
+        max_http_request_size: 4294967296
+        enable_cors: true
+      chttpd_auth:
+        require_valid_user: true
+      httpd:
+        WWW-Authenticate: 'Basic realm="couchdb"'
+        enable_cors: true
+      # Obsidian desktop, iOS, Android respectively.
+      cors:
+        origins: app://obsidian.md,capacitor://localhost,http://localhost
+        credentials: true
+        headers: accept, authorization, content-type, origin, referer
+        methods: GET,PUT,POST,HEAD,DELETE

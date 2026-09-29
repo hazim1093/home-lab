@@ -1,4 +1,12 @@
 creation_rules:
+# Notes stack: primary key only. The restic password unlocks the entire vault
+# backup, so the hermes-agent key is deliberately excluded here.
+# First matching rule wins, so this must stay above the catch-all below.
+- path_regex: kubernetes/apps/(couchdb|obsidian|obsidian-vault-backup)/.*\.yaml$
+  encrypted_regex: ^(data|stringData)$
+  age:
+  - age1s84t0ws8cpp8ujf8mny373gg63g9d52fezrdwe24jdfe4d309pwqvawpcu
+
 # Encrypt all YAML files containing Kubernetes Secrets
 - encrypted_regex: ^(data|stringData)$
   age:

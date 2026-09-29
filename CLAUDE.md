@@ -268,26 +268,32 @@ Flux System Kustomization (flux-system/kustomization.yaml)
 
 ## Two Patterns for Apps
 
-There are two ways to deploy applications, depending on whether they use Helm charts or raw manifests:
+Every component and every app gets its own subdirectory (with its own `kustomization.yaml`) and its own Flux Kustomization in `flux-system/apps/<name>.yaml`, registered in `flux-system/apps/kustomization.yaml`. Mechanically `kubernetes/apps/` and `kubernetes/components/` work identically — same steps, same per-app `dependsOn`/`healthChecks`/SOPS decryption. There is no shared, catch-all Kustomization for either directory anymore.
 
-### Pattern A: `kubernetes/apps/` — Raw Manifests (Simple Apps)
+The only real choice is **role**, not mechanism:
 
-**Use this for**: Custom apps, non-Helm deployments, apps you own (e.g., screener).
+### Pattern B: `kubernetes/components/`
 
-Each app gets its own Flux Kustomization in `flux-system/apps/<app>.yaml` pointing at `kubernetes/apps/<app>`, with SOPS decryption and `${LOCAL_DOMAIN}` substitution. Copy an existing one (e.g. `paperless.yaml`).
+**Use this for**: Platform/core pieces — things other components or apps depend on, or that the platform is built from (traefik, cert-manager, pihole, metallb, tailscale-operator, etc.). Helm chart or raw manifest, doesn't matter.
 
-**To add a new app:**
+### Pattern A: `kubernetes/apps/`
 
-1. Create `kubernetes/apps/my-app/` with manifests:
+**Use this for**: User-facing applications layered on top of the platform (hermes, paperless, couchdb, etc.). Helm chart or raw manifest, doesn't matter — couchdb is a Helm chart and lives here because it's an application, not platform infrastructure.
+
+**To add a new app or component:**
+
+1. Create `kubernetes/<apps-or-components>/my-app/` with manifests:
    ```
    kubernetes/apps/my-app/
    ├── kustomization.yaml   # lists all files below
    ├── namespace.yaml
    ├── secret.yaml          # SOPS-encrypted
-   └── httproute.yaml       # can use ${LOCAL_DOMAIN}
+   └── httproute.yaml       # can use ${LOCAL_DOMAIN}, apps/ only
    ```
 
-2. Add `flux-system/apps/my-app.yaml` (copy `paperless.yaml`, change name and path) and list it in `flux-system/apps/kustomization.yaml`.
+2. Create `flux-system/apps/my-app.yaml` — copy an existing one in the same directory (e.g. `paperless.yaml` for an app, `tailscale-operator.yaml` for a component) and change `metadata.name`, `spec.path`, and `spec.dependsOn` to match what this one actually needs. Don't copy `dependsOn` blindly — `couchdb.yaml` depends on `tailscale-operator`, not `traefik`, because it uses no HTTPRoute or KEDA.
+
+3. List the new file in `flux-system/apps/kustomization.yaml`.
 
 **Encrypting secrets:**
 ```bash
@@ -295,17 +301,11 @@ export SOPS_AGE_KEY_FILE=.age/key.txt
 sops --encrypt --in-place kubernetes/apps/my-app/secret.yaml
 ```
 
-Each app Kustomization depends on `traefik`, so HTTPRoutes work out of the box.
-
 ---
 
-### Pattern B: `kubernetes/components/` — Helm Chart Apps
+## Adding a New Component/App
 
-**Use this for**: Infrastructure and Helm-based deployments (traefik, cert-manager, pihole, etc.).
-
-Each component gets its own Flux Kustomization in `flux-system/apps/`, allowing per-app dependency ordering and configuration.
-
-## Adding a New Component/App (Pattern B)
+The steps below use `kubernetes/components/` as the example, but apply identically to `kubernetes/apps/` — swap the base directory per the role decision above. (Some example values here — Helm API versions, `sourceRef.name: home-lab` — are older than the repo's current files; check an existing neighbor like `couchdb.yaml` or `tailscale-operator.yaml` for the current exact values rather than copying these verbatim.)
 
 ### Step-by-Step Guide
 

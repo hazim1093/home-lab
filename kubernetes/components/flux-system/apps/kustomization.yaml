@@ -28,6 +28,8 @@ resources:
 - hajimari.yaml
 - homarr.yaml
 - private-apps.yaml
+- tailscale-operator.yaml
+- couchdb.yaml
 - hermes.yaml
 - hermes-workspace.yaml
 - paperless.yaml
