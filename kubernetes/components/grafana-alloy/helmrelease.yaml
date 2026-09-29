@@ -346,6 +346,36 @@ spec:
             }
           }
 
+          // ---- CouchDB (Obsidian LiveSync sync hub) ----
+          discovery.kubernetes "couchdb" {
+            role = "pod"
+            namespaces {
+              names = ["couchdb"]
+            }
+          }
+
+          discovery.relabel "couchdb" {
+            targets = discovery.kubernetes.couchdb.targets
+
+            rule {
+              source_labels = ["__meta_kubernetes_pod_container_port_number"]
+              regex         = "17986"
+              action        = "keep"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_pod_name"]
+              target_label  = "pod"
+            }
+          }
+
+          prometheus.scrape "couchdb" {
+            targets         = discovery.relabel.couchdb.output
+            job_name        = "integrations/couchdb"
+            metrics_path    = "/_node/_local/_prometheus"
+            scrape_interval = "60s"
+            forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+          }
+
           // ---- Logs: tail every pod's logs via the Kubernetes API ----
           discovery.kubernetes "pods" {
             role = "pod"
@@ -354,6 +384,13 @@ spec:
           discovery.relabel "pod_logs" {
             targets = discovery.kubernetes.pods.targets
 
+            // CouchDB request logs contain database names and document IDs;
+            // keep them out of Grafana Cloud.
+            rule {
+              source_labels = ["__meta_kubernetes_namespace"]
+              regex         = "couchdb"
+              action        = "drop"
+            }
             rule {
               source_labels = ["__meta_kubernetes_namespace"]
               target_label  = "namespace"

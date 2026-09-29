@@ -29,3 +29,4 @@ resources:
 - homarr.yaml
 - private-apps.yaml
 - apps.yaml
+- tailscale-operator.yaml

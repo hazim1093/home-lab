@@ -7,3 +7,4 @@ age.agekey
 *.agekey
 key.txt
 decrypted.yaml
+.decrypted~secret.yaml

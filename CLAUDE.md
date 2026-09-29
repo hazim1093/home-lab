@@ -268,11 +268,17 @@ Flux System Kustomization (flux-system/kustomization.yaml)
 
 ## Two Patterns for Apps
 
-There are two ways to deploy applications, depending on whether they use Helm charts or raw manifests:
+There are two ways to deploy applications. The choice is about **role, not mechanism** — whether something is core platform infrastructure other things depend on and need to order against, or an app sitting on top of the platform. A component can be a raw manifest (e.g. a Deployment) and an app can be a Helm chart — the deciding question is "does this need its own Flux Kustomization for `dependsOn`/`healthChecks`, or can it ride the shared one?", not "is this Helm or YAML".
 
-### Pattern A: `kubernetes/apps/` — Raw Manifests (Simple Apps)
+### Pattern B: `kubernetes/components/` — Core (own Flux Kustomization)
 
-**Use this for**: Custom apps, non-Helm deployments, apps you own (e.g., screener).
+**Use this for**: Platform/core pieces — things other components depend on, that need their own dependency ordering or health checks, or that other apps build on (traefik, cert-manager, pihole, metallb, tailscale-operator, couchdb, etc.). Whether the component is a Helm chart or a raw manifest doesn't matter — what matters is that it needs independent rollout/ordering.
+
+Each component gets its own Flux Kustomization in `flux-system/apps/`, allowing per-app dependency ordering (`dependsOn`), health checks, and its own SOPS decryption block.
+
+### Pattern A: `kubernetes/apps/` — Apps (shared Flux Kustomization)
+
+**Use this for**: User-facing apps layered on top of the platform, that don't need independent dependency ordering against a specific other component (e.g. screener).
 
 A single Flux Kustomization (`apps` in `flux-system`) watches the entire `kubernetes/apps/` directory. It has SOPS decryption and `${LOCAL_DOMAIN}` substitution built in — every app inside inherits these automatically.
 
@@ -305,12 +311,6 @@ sops --encrypt --in-place kubernetes/apps/my-app/secret.yaml
 The `apps` Flux Kustomization depends on `traefik`, so HTTPRoutes work out of the box.
 
 ---
-
-### Pattern B: `kubernetes/components/` — Helm Chart Apps
-
-**Use this for**: Infrastructure and Helm-based deployments (traefik, cert-manager, pihole, etc.).
-
-Each component gets its own Flux Kustomization in `flux-system/apps/`, allowing per-app dependency ordering and configuration.
 
 ## Adding a New Component/App (Pattern B)
 

@@ -1,7 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - hermes
-  - hermes-workspace
-  - paperless
-  - couchdb
+  - namespace.yaml
+  - secret.yaml
+  - helmrelease.yaml
