@@ -31,4 +31,3 @@ resources:
 - hermes.yaml
 - hermes-workspace.yaml
 - paperless.yaml
-- apps.yaml
