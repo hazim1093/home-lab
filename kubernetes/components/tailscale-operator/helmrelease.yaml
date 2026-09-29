@@ -23,6 +23,8 @@ spec:
       clientSecret: ""
     installCRDs: true
     operatorConfig:
+      annotations:
+        secret.reloader.stakater.com/reload: operator-oauth
       defaultTags:
         - "tag:k8s-operator"
       resources:
