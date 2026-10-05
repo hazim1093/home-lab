@@ -1,0 +1,19 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: obsidian-vault-backup
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/apps/obsidian-vault-backup
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  wait: true
+  dependsOn:
+    - name: couchdb
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age

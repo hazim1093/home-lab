@@ -30,6 +30,8 @@ resources:
 - private-apps.yaml
 - tailscale-operator.yaml
 - couchdb.yaml
+- obsidian-mcp.yaml
+- obsidian-vault-backup.yaml
 - hermes.yaml
 - hermes-workspace.yaml
 - paperless.yaml

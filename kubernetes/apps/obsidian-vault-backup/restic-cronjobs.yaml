@@ -1,0 +1,78 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: obsidian-vault-backup
+  namespace: obsidian
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: restic
+              image: restic/restic:0.17.3
+              args: ["backup", "/vault", "--tag", "obsidian"]
+              envFrom:
+                - secretRef:
+                    name: obsidian-vault-backup-restic
+              volumeMounts:
+                - name: vault
+                  mountPath: /vault
+                  readOnly: true
+          volumes:
+            - name: vault
+              persistentVolumeClaim:
+                claimName: obsidian-vault-data
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: obsidian-vault-backup-retention
+  namespace: obsidian
+spec:
+  schedule: "0 4 * * 0"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: restic
+              image: restic/restic:0.17.3
+              args:
+                - forget
+                - --keep-daily=7
+                - --keep-weekly=4
+                - --keep-monthly=12
+                - --prune
+              envFrom:
+                - secretRef:
+                    name: obsidian-vault-backup-restic
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: obsidian-vault-backup-verify
+  namespace: obsidian
+spec:
+  schedule: "0 5 * * 0"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: restic
+              image: restic/restic:0.17.3
+              args: ["check", "--read-data-subset=5%"]
+              envFrom:
+                - secretRef:
+                    name: obsidian-vault-backup-restic
