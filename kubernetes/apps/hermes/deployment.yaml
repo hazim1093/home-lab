@@ -20,8 +20,6 @@ spec:
       # Off: HERMES_DASHBOARD_PORT auto-injected from the hermes-dashboard
       # Service collides with the app's own env var of the same name.
       enableServiceLinks: false
-      imagePullSecrets:
-      - name: ghcr-pull-secret
       # Dedicated SA (not "default") bound to the view ClusterRole, so the
       # agent's cluster access is separately named/revocable.
       serviceAccountName: hermes-agent
@@ -64,7 +62,7 @@ spec:
       # — required for the dashboard's Start/Stop-gateway control to see
       # gateway at all (it signals a local sibling s6 service, not cross-container).
       - name: gateway
-        image: ghcr.io/hazim1093/hermes-agent
+        image: docker.io/nousresearch/hermes-agent
         imagePullPolicy: IfNotPresent
         args: ["gateway", "run"]
         envFrom:

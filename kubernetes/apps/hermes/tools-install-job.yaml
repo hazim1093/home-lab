@@ -17,7 +17,7 @@ spec:
       # Use bare $VAR or printf, not ${VAR}: Flux's postBuild substitution
       # blanks out any ${...} it doesn't recognize in kubernetes/apps/.
       - name: install-tools
-        image: ghcr.io/hazim1093/hermes-agent
+        image: docker.io/nousresearch/hermes-agent
         imagePullPolicy: IfNotPresent
         securityContext:
           runAsUser: 0
