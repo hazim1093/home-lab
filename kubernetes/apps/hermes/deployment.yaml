@@ -25,6 +25,63 @@ spec:
       serviceAccountName: hermes-agent
       automountServiceAccountToken: true
       initContainers:
+      # Per-turn credential/allowlist reads come from <HERMES_HOME>/.env, never the
+      # pod env (the gateway runs with gateway.multiplex_profiles), so render the
+      # Secret's credential keys there. Key names are chosen by suffix; see the script.
+      - name: render-profile-env
+        image: docker.io/nousresearch/hermes-agent
+        imagePullPolicy: IfNotPresent
+        command: ["/opt/hermes/.venv/bin/python3", "-c"]
+        args:
+          - |
+            import os
+            from pathlib import Path
+
+            SUFFIXES = ("_API_KEY", "_TOKEN", "_ALLOWED_USERS", "_ALLOW_ALL_USERS", "_ALLOWED_CHATS")
+            EXACT = {"API_SERVER_KEY"}
+            EXTRA = set(os.environ.get("HERMES_PROFILE_ENV_EXTRA", "").split())
+
+            def managed(key):
+                return key in EXACT or key in EXTRA or key.endswith(SUFFIXES)
+
+            ok = {k: v for k, v in os.environ.items()
+                  if managed(k) and v and "\n" not in v and not v.startswith("REPLACE_WITH")}
+            bad = sorted(k for k in os.environ if managed(k) and k not in ok)
+
+            path = Path(os.environ.get("HERMES_HOME", "/opt/data")) / ".env"
+            lines = path.read_text().splitlines() if path.exists() else []
+            out, written = [], set()
+            for line in lines:
+                key = line.split("=", 1)[0].strip() if "=" in line and not line.lstrip().startswith("#") else None
+                if key in ok:
+                    out.append(f"{key}={ok[key]}")
+                    written.add(key)
+                elif key is not None and managed(key):
+                    pass  # removed from the Secret: drop the stale copy
+                else:
+                    out.append(line)  # hand-maintained lines (home channel) survive
+            added = sorted(set(ok) - written)
+            out += [f"{k}={ok[k]}" for k in added]
+            tmp = path.with_name(".env.render.tmp")
+            tmp.write_text("\n".join(out).rstrip("\n") + "\n")
+            os.chmod(tmp, 0o600)
+            os.replace(tmp, path)
+            print("hermes .env updated:", ", ".join(sorted(written)) or "-")
+            print("hermes .env added:", ", ".join(added) or "-")
+            print("skipped (empty/multiline):", ", ".join(bad) or "-")
+            print("hermes .env lines:", len(out))
+        envFrom:
+        - secretRef:
+            name: hermes-secrets
+        env:
+        - name: HERMES_HOME
+          value: /opt/data
+        volumeMounts:
+        - name: data
+          mountPath: /opt/data
+        securityContext:
+          runAsUser: 10000
+          runAsGroup: 10000
       # Tool installation (kubectl, jq, gh, gcloud, tofu) happens in the
       # standalone hermes-tools-install Job (tools-install-job.yaml), not
       # here — that Job owns the network calls, retries independently via
