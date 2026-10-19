@@ -12,7 +12,8 @@
   "kubernetes": {
     "managerFilePatterns": [
       "/^kubernetes\\/components\\/.+\\.yaml$/",
-      "/^kubernetes\\/apps\\/paperless\\/.+\\.yaml$/"
+      "/^kubernetes\\/apps\\/paperless\\/.+\\.yaml$/",
+      "/^kubernetes\\/apps\\/hermes\\/.+\\.yaml$/"
     ],
     "ignorePaths": [
       "kubernetes/components/flux-system/**"
@@ -105,6 +106,18 @@
       "groupName": "{{depName}} (major)",
       "groupSlug": "helm-{{depName}}-major",
       "commitMessageTopic": "{{depName}} Helm release"
+    },
+    {
+      "description": "Hermes image uses SemVer tags since v0.21.6; the older CalVer tags (v2026.*) would sort as newer. Relax at 1.0.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "nousresearch/hermes-agent",
+        "/^docker\\.io\\/nousresearch\\/hermes-agent$/"
+      ],
+      "versioning": "semver",
+      "allowedVersions": "/^v?0\\./"
     },
     {
       "description": "Separate PRs for each container image - minor and patch grouped",
