@@ -6,17 +6,18 @@
 # single-minor hops (TARGETS below). Each hop installs a pinned k3s release and
 # then waits for a healthy cluster before the next one starts.
 #
-# Nothing here touches persistent data: k3s keeps its sqlite datastore and the
-# local-path volumes under /var/lib/rancher/k3s. The script backs both up before
-# the first hop anyway.
+# Persistent data is not touched: k3s keeps its sqlite datastore and the
+# local-path volumes under /var/lib/rancher/k3s. A consistent copy of the
+# datastore is taken before the first hop.
 #
 # Usage:
 #   sudo ./upgrade-k3s.sh             # run the plan
 #   sudo ./upgrade-k3s.sh --dry-run   # show what would happen
 #   sudo ./upgrade-k3s.sh --yes       # no confirmation prompt
 #
-# Rollback (only within the same minor, or restore the backup):
-#   cp /root/k3s-upgrade-<ts>/k3s.<version> /usr/local/bin/k3s && systemctl restart k3s
+# Rollback: k3s does not support downgrading across minors. Going back means
+# restoring the saved datastore + binary from the backup dir (a control-plane
+# state rebuild, not an in-place downgrade), or redeploying the node.
 set -euo pipefail
 
 # Latest patch release of each minor on the stable channel (2026-10).
@@ -46,7 +47,8 @@ die()  { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 
 current_version() { k3s --version 2>/dev/null | awk 'NR==1{print $3}'; }
 
-# version_lt A B -> true when A < B (build metadata ignored by sort -V).
+# version_lt A B -> true when A < B. sort -V orders the whole string; the hops
+# differ in major.minor.patch, so the +k3sN suffix never decides the ordering.
 version_lt() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]; }
 
 wait_api() {
@@ -75,25 +77,48 @@ wait_healthy() {
     return 1
   fi
 
-  # End-to-end: the Gateway must still answer.
-  local gw
+  # End-to-end: the Gateway must still answer. Three tries, because kube-proxy
+  # and MetalLB can blink for a few seconds right after an API restart.
+  local gw ok=0
   gw=$(k3s kubectl -n traefik get gateway traefik-gateway -o jsonpath='{.status.addresses[0].value}' 2>/dev/null || true)
   if [ -n "$gw" ]; then
-    curl -sk -o /dev/null --max-time 15 "https://$gw/" || { warn "gateway $gw did not answer"; return 1; }
+    for _ in 1 2 3; do
+      curl -sk -o /dev/null --max-time 15 "https://$gw/" && { ok=1; break; }
+      sleep 5
+    done
+    [ "$ok" -eq 1 ] || { warn "gateway $gw did not answer"; return 1; }
   else
     warn "gateway address not found, skipping the ingress probe"
   fi
 }
 
+# backup -> prints the backup dir on stdout; progress goes to stderr so the
+# caller can capture just the path.
 backup() {
-  local cur=$1 dir
+  local cur=$1 dir db=/var/lib/rancher/k3s/server/db/state.db
   dir="/root/k3s-upgrade-$(date +%Y%m%d-%H%M%S)"
-  mkdir -p "$dir"
+  mkdir -p "$dir/server-db"
   cp -a /usr/local/bin/k3s "$dir/k3s.$cur"
   cp -a /etc/rancher/k3s "$dir/rancher-k3s"
+
+  # Never copy a live sqlite file: a torn page makes the copy unrestorable.
+  # Use the online backup API when sqlite3 exists, else stop k3s for the copy.
   if [ -d /var/lib/rancher/k3s/server/db ]; then
-    cp -a /var/lib/rancher/k3s/server/db "$dir/server-db"
+    if command -v sqlite3 >/dev/null 2>&1 && [ -f "$db" ]; then
+      sqlite3 "$db" ".backup '$dir/server-db/state.db'" || die "sqlite online backup failed"
+      [ "$(sqlite3 "$dir/server-db/state.db" 'PRAGMA integrity_check;')" = "ok" ] \
+        || die "datastore backup failed integrity_check"
+    else
+      printf '\n==> stopping k3s for a consistent datastore copy\n' >&2
+      systemctl stop k3s
+      cp -a /var/lib/rancher/k3s/server/db/. "$dir/server-db/"
+      systemctl start k3s
+      wait_api || die "k3s did not come back after the backup stop"
+    fi
+  else
+    printf 'WARN: %s missing, datastore not backed up\n' /var/lib/rancher/k3s/server/db >&2
   fi
+
   k3s kubectl get all -A -o yaml > "$dir/cluster-objects.yaml" 2>/dev/null || true
   printf '%s\n' "$dir"
 }

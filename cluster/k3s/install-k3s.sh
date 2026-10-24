@@ -290,16 +290,13 @@ display_cluster_info() {
     echo "  2. Access cluster: kubectl get nodes"
     echo
 
-    # config.yaml disables flannel; without a CNI nothing can be scheduled.
+    # config.yaml disables flannel; on a fresh node there is no CNI and Flux
+    # cannot install Cilium before Flux itself is bootstrapped.
     if grep -qE '^flannel-backend:[[:space:]]*none' /etc/rancher/k3s/config.yaml; then
-        log_warning "flannel is disabled and Cilium is not installed yet."
-        echo "  Install it before bootstrapping Flux (Flux adopts the release later):"
-        echo "    helm repo add cilium https://helm.cilium.io && helm repo update"
-        echo "    helm install cilium cilium/cilium --version 1.20.4 -n kube-system \\"
-        echo "      --set ipam.operator.clusterPoolIPv4PodCIDRList=10.42.0.0/16 \\"
-        echo "      --set cni.binPath=/var/lib/rancher/k3s/data/cni \\"
-        echo "      --set cni.confPath=/var/lib/rancher/k3s/agent/etc/cni/net.d \\"
-        echo "      --set kubeProxyReplacement=false --set operator.replicas=1"
+        log_warning "flannel is disabled in config.yaml."
+        echo "  Fresh build: comment out flannel-backend/disable-network-policy in"
+        echo "  config.yaml, re-run this script, bootstrap Flux, then run"
+        echo "  migrate-to-cilium.sh (it switches the CNI on a running cluster)."
         echo
     fi
 }

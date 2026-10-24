@@ -51,10 +51,11 @@ The script will:
 
 Done! K3s is now installed and will start automatically on boot.
 
-**This config has flannel disabled.** On a brand-new node, install Cilium before
-bootstrapping Flux (Flux adopts the release afterwards) — the script prints the
-exact command, and [CNI: Cilium](#cni-cilium) has the details. On an existing
-cluster use `migrate-to-cilium.sh` instead.
+**This config has flannel disabled.** On a brand-new node that leaves k3s with
+no CNI, and Flux cannot install Cilium before Flux itself is bootstrapped: boot
+with flannel (comment out `flannel-backend`/`disable-network-policy` in
+[config.yaml](config.yaml)), bootstrap Flux, then run `migrate-to-cilium.sh`.
+On an existing cluster use the migration script directly.
 
 ## Verify
 
@@ -102,8 +103,13 @@ first failure — the cluster keeps running, the remaining hops simply do not
 happen.
 
 Backups go to `/root/k3s-upgrade-<timestamp>/` (k3s binary, `/etc/rancher/k3s`,
-the sqlite datastore, and a YAML dump of cluster objects). Pods are not drained;
-the API is down for roughly 30s per hop, containers keep running.
+a **consistent** copy of the sqlite datastore — online backup via `sqlite3` when
+installed, otherwise a brief k3s stop — and a YAML dump of cluster objects).
+Pods are not drained; the API is down for roughly 30s per hop, containers keep
+running.
+
+There is no cross-minor downgrade in k3s: reverting means restoring that
+datastore + binary (a control-plane state rebuild) or redeploying the node.
 
 **Latest stable is deliberately not the target for this node**: Cilium 1.20 is
 tested against k8s 1.33-1.36, so `v1.36.5+k3s1` is the newest version that keeps
@@ -132,18 +138,29 @@ cni.confPath: /var/lib/rancher/k3s/agent/etc/cni/net.d
 ```bash
 cd ~/home-lab/cluster/k3s
 git pull
-sudo ./migrate-to-cilium.sh          # add --reboot to reboot right after the checks
+sudo ./migrate-to-cilium.sh
 sudo reboot          # moves pods that still hold a flannel sandbox onto Cilium
 ```
 
-The script backs up `/etc/rancher/k3s/config.yaml` and the NetworkPolicies to
-`/root/k3s-cni-backup-<timestamp>/`, pre-pulls the Cilium images, writes the new
-config, restarts k3s, applies the component (Flux' helm-controller installs the
-chart) and smoke-tests that a new pod gets an address from `10.42.0.0/16`.
+The script backs up `/etc/rancher/k3s/config.yaml`, the CNI dir and the
+NetworkPolicies to `/root/k3s-cni-backup-<timestamp>/`, pre-pulls the Cilium
+images, refuses to overwrite a live config that drifted from the repo (override
+with `--force`), writes the new config, restarts k3s, applies the component
+(Flux' helm-controller installs the chart) and smoke-tests a pod: it must get an
+address from `10.42.0.0/16`, not share it with another pod, and resolve
+`kubernetes.default.svc.cluster.local`.
 
-Expect a few minutes of broken pod networking between the k3s restart and Cilium
-becoming ready; the API and SSH stay up. Local-path volumes and the sqlite
-datastore are untouched by the CNI switch.
+Two windows exist between the k3s restart and the reboot, both expected:
+- **No NetworkPolicy is enforced** until Cilium's agents are ready (kube-router
+  is off, Cilium is not up yet). That is why the image pre-pull runs first.
+- New pods can take an address a live flannel pod still holds. The smoke test
+  fails if it sees a duplicate; either way, **reboot immediately**.
+
+`--reboot` does the reboot for you, but only use it once you have confirmed the
+node re-associates with WiFi by itself (this box is WiFi-only, with no console
+path other than physical access). Rebooting by hand keeps that visible.
+
+Local-path volumes and the sqlite datastore are untouched by the CNI switch.
 
 The `cilium` Flux Kustomization ships **suspended** — resume it only after the
 script has run, otherwise Cilium and flannel would both allocate from
@@ -181,7 +198,9 @@ sudo reboot
 ```
 
 Restores the backed-up config, removes the Cilium HelmRelease and DaemonSets and
-drops its CNI config so k3s writes flannel's again.
+drops its CNI config so k3s writes flannel's again. Cilium's CRDs, RBAC and the
+`cilium-cni` binary stay behind — harmless, but clean them up before a future
+re-install.
 
 ## Uninstall
 
