@@ -169,8 +169,10 @@ install_k3s() {
     cp "$config_file" /etc/rancher/k3s/config.yaml
     log_info "Configuration file copied to /etc/rancher/k3s/config.yaml"
 
-    # Download and install K3s
+    # Download and install K3s.
+    # Pinned: a rebuild must land on the same version as upgrade-k3s.sh's plan.
     export INSTALL_K3S_SKIP_START=false
+    export INSTALL_K3S_VERSION="${INSTALL_K3S_VERSION:-v1.36.5+k3s1}"
 
     curl -sfL https://get.k3s.io | sh -
 
@@ -287,6 +289,16 @@ display_cluster_info() {
     echo "  1. Deploy your applications with kubectl"
     echo "  2. Access cluster: kubectl get nodes"
     echo
+
+    # config.yaml disables flannel; on a fresh node there is no CNI and Flux
+    # cannot install Cilium before Flux itself is bootstrapped.
+    if grep -qE '^flannel-backend:[[:space:]]*none' /etc/rancher/k3s/config.yaml; then
+        log_warning "flannel is disabled in config.yaml."
+        echo "  Fresh build: comment out flannel-backend/disable-network-policy in"
+        echo "  config.yaml, re-run this script, bootstrap Flux, then run"
+        echo "  migrate-to-cilium.sh (it switches the CNI on a running cluster)."
+        echo
+    fi
 }
 
 # Main installation flow
