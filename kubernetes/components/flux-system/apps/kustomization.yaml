@@ -8,6 +8,7 @@ resources:
 - metallb-config.yaml
 - external-dns.yaml
 - cert-manager.yaml
+- cilium.yaml
 - certificates.yaml
 - traefik.yaml
 - home-assistant.yaml

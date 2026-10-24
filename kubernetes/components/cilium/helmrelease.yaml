@@ -1,0 +1,75 @@
+# Cilium replaces k3s' flannel as the CNI (see cluster/k3s/README.md).
+#
+# Values that matter here:
+#   - ipam ... 10.42.0.0/16 must match the k3s cluster-cidr, or pods get IPs the
+#     node does not route.
+#   - kubeProxyReplacement false: k3s keeps kube-proxy for Services. Cilium still
+#     does the pod datapath, NetworkPolicies and Hubble. Flip this only together
+#     with "disable-kube-proxy: true" in the k3s config.
+#   - install/upgrade crds: HelmRelease defaults to skipping CRDs, Cilium needs them.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cilium
+  namespace: flux-system
+spec:
+  interval: 12h
+  targetNamespace: kube-system
+  chart:
+    spec:
+      chart: cilium
+      version: "1.20.4"
+      sourceRef:
+        kind: HelmRepository
+        name: cilium
+        namespace: flux-system
+      interval: 12h
+  install:
+    crds: Create
+    timeout: 10m
+  upgrade:
+    crds: CreateReplace
+    timeout: 10m
+  values:
+    cluster:
+      name: home-lab
+    routingMode: tunnel
+    tunnelProtocol: vxlan
+    kubeProxyReplacement: "false"
+    ipv4:
+      enabled: true
+    ipv6:
+      enabled: false
+    ipam:
+      mode: cluster-pool
+      operator:
+        clusterPoolIPv4PodCIDRList:
+          - 10.42.0.0/16
+        clusterPoolIPv4MaskSize: 24
+    cni:
+      exclusive: true
+      # k3s keeps containerd's CNI dirs under /var/lib/rancher, not /etc/cni.
+      # With the chart defaults Cilium writes its config and binary where the
+      # k3s kubelet never looks and pods come up without an address.
+      binPath: /var/lib/rancher/k3s/data/cni
+      confPath: /var/lib/rancher/k3s/agent/etc/cni/net.d
+    operator:
+      replicas: 1
+      prometheus:
+        enabled: true
+    prometheus:
+      enabled: true
+    hubble:
+      enabled: true
+      relay:
+        enabled: true
+      ui:
+        enabled: false
+      metrics:
+        enabled:
+          - dns:query;ignoreAAAA
+          - drop
+          - tcp
+          - flow
+          - icmp
+          - http

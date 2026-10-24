@@ -169,8 +169,10 @@ install_k3s() {
     cp "$config_file" /etc/rancher/k3s/config.yaml
     log_info "Configuration file copied to /etc/rancher/k3s/config.yaml"
 
-    # Download and install K3s
+    # Download and install K3s.
+    # Pinned: a rebuild must land on the same version as upgrade-k3s.sh's plan.
     export INSTALL_K3S_SKIP_START=false
+    export INSTALL_K3S_VERSION="${INSTALL_K3S_VERSION:-v1.36.5+k3s1}"
 
     curl -sfL https://get.k3s.io | sh -
 
@@ -287,6 +289,19 @@ display_cluster_info() {
     echo "  1. Deploy your applications with kubectl"
     echo "  2. Access cluster: kubectl get nodes"
     echo
+
+    # config.yaml disables flannel; without a CNI nothing can be scheduled.
+    if grep -qE '^flannel-backend:[[:space:]]*none' /etc/rancher/k3s/config.yaml; then
+        log_warning "flannel is disabled and Cilium is not installed yet."
+        echo "  Install it before bootstrapping Flux (Flux adopts the release later):"
+        echo "    helm repo add cilium https://helm.cilium.io && helm repo update"
+        echo "    helm install cilium cilium/cilium --version 1.20.4 -n kube-system \\"
+        echo "      --set ipam.operator.clusterPoolIPv4PodCIDRList=10.42.0.0/16 \\"
+        echo "      --set cni.binPath=/var/lib/rancher/k3s/data/cni \\"
+        echo "      --set cni.confPath=/var/lib/rancher/k3s/agent/etc/cni/net.d \\"
+        echo "      --set kubeProxyReplacement=false --set operator.replicas=1"
+        echo
+    fi
 }
 
 # Main installation flow
