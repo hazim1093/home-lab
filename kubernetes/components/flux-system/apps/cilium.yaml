@@ -1,0 +1,24 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cilium
+  namespace: flux-system
+spec:
+  # Suspended until the node has flannel disabled: installing Cilium while
+  # flannel still allocates from the same pod CIDR gives duplicate pod IPs.
+  # cluster/k3s/migrate-to-cilium.sh applies the component directly, then this
+  # gate is flipped off. Do not resume it before that script has run.
+  suspend: true
+  interval: 10m
+  path: ./kubernetes/components/cilium
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  wait: true
+  timeout: 10m
+  healthChecks:
+  - apiVersion: helm.toolkit.fluxcd.io/v2
+    kind: HelmRelease
+    name: cilium
+    namespace: kube-system

@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
 - arc.yaml
 - jetstack.yaml
+- cilium.yaml
 - home-assistant.yaml
 - mojo2600.yaml
 - traefik.yaml
