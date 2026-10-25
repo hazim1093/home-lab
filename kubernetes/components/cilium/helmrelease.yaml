@@ -11,10 +11,9 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: cilium
-  namespace: flux-system
+  namespace: kube-system
 spec:
   interval: 12h
-  targetNamespace: kube-system
   chart:
     spec:
       chart: cilium

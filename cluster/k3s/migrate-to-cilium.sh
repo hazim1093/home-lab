@@ -238,7 +238,7 @@ rollback() {
   log "rolling back to flannel using $dir/config.yaml"
   install -m 0644 "$dir/config.yaml" "$CONF"
 
-  k3s kubectl -n flux-system delete helmrelease cilium --ignore-not-found >/dev/null 2>&1 || true
+  k3s kubectl -n kube-system delete helmrelease cilium --ignore-not-found >/dev/null 2>&1 || true
   k3s kubectl -n kube-system delete ds cilium cilium-envoy --ignore-not-found >/dev/null 2>&1 || true
   k3s kubectl -n kube-system delete deploy cilium-operator hubble-relay --ignore-not-found >/dev/null 2>&1 || true
 

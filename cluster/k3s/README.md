@@ -119,7 +119,9 @@ the CNI on a supported pair. Revisit when Cilium ships 1.37 support.
 
 [config.yaml](config.yaml) sets `flannel-backend: none` and
 `disable-network-policy: true`; the CNI is Cilium, deployed from
-`kubernetes/components/cilium` (chart pinned there, values too).
+`kubernetes/components/cilium` (chart pinned there, values too). Cilium and
+Hubble both live in `kube-system`, and the Flux `HelmRelease` lives there with
+them — only the `Kustomization` and `HelmRepository` stay in `flux-system`.
 
 Why Cilium: NetworkPolicies are enforced by Cilium's datapath (k3s' kube-router
 controller is off) and Hubble gives per-flow L3/L4/L7 visibility.
