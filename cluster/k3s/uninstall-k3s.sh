@@ -200,6 +200,8 @@ cleanup_cni() {
         "/etc/cni/net.d"
         "/opt/cni/bin"
         "/var/lib/cni"
+        "/var/lib/rancher/k3s/agent/etc/cni/net.d"
+        "/var/lib/rancher/k3s/data/cni"
     )
 
     for dir in "${cni_dirs[@]}"; do
