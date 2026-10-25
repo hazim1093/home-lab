@@ -19,8 +19,8 @@ service-cidr: "10.43.0.0/16"
 # CNI: Cilium (kubernetes/components/cilium), so flannel and kube-router's
 # network policy controller must be off. Run cluster/k3s/migrate-to-cilium.sh
 # to switch a running cluster - never flip this without installing Cilium.
-flannel-backend: none
-disable-network-policy: true
+# flannel-backend: none
+# disable-network-policy: true
 
 # Kubelet configuration
 # Enable metrics for kubectl top
