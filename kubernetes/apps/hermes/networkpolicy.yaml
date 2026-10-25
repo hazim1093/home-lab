@@ -9,6 +9,7 @@ spec:
       app: hermes
   policyTypes:
   - Ingress
+  - Egress
   ingress:
   - from:
     # Same namespace (gateway<->dashboard, and anything else in hermes)
@@ -32,3 +33,24 @@ spec:
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: gatus
+  egress:
+  # Allow DNS (needed to resolve model provider hostnames)
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Allow HTTP/HTTPS to external model providers and services
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+  # Allow traffic within the cluster (other services)
+  - to:
+    - namespaceSelector: {}
