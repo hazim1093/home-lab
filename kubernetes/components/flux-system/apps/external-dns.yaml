@@ -19,7 +19,6 @@ spec:
     substituteFrom:
     - kind: Secret
       name: domain-config
-      namespace: flux-system
   decryption:
     provider: sops
     secretRef:
