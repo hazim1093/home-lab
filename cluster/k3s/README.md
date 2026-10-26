@@ -49,13 +49,24 @@ The script will:
 - Install K3s
 - Enable auto-start on boot
 
-Done! K3s is now installed and will start automatically on boot.
+Done! K3s and Cilium are installed and the node is `Ready`.
 
-**This config has flannel disabled.** On a brand-new node that leaves k3s with
-no CNI, and Flux cannot install Cilium before Flux itself is bootstrapped: boot
-with flannel (comment out `flannel-backend`/`disable-network-policy` in
-[config.yaml](config.yaml)), bootstrap Flux, then run `migrate-to-cilium.sh`.
-On an existing cluster use the migration script directly.
+**Order matters on a new node:** `install-k3s.sh` (k3s + Cilium) -> Flux bootstrap
+([kubernetes/bootstrap/flux](../../kubernetes/bootstrap/flux/README.md)). k3s runs
+with flannel disabled, so the node has no CNI and no pod can start - including
+Flux' own controllers - until Cilium is up. The script therefore installs Cilium
+with the Helm CLI straight after k3s starts, using the chart version and
+`values.yaml` from `kubernetes/components/cilium`. When Flux is bootstrapped, its
+`cilium` HelmRelease (same release name and namespace) adopts that install.
+
+### Rebuilding from scratch
+
+```bash
+sudo ./uninstall-k3s.sh     # also removes Cilium links, BPF pins and iptables chains
+sudo reboot                 # drops anything the uninstall could not
+sudo ./install-k3s.sh       # k3s + Cilium
+# then bootstrap Flux (tofu apply) and restore the sops-age secret
+```
 
 ## Verify
 
@@ -111,66 +122,61 @@ running.
 There is no cross-minor downgrade in k3s: reverting means restoring that
 datastore + binary (a control-plane state rebuild) or redeploying the node.
 
-**Latest stable is deliberately not the target for this node**: Cilium 1.20 is
-tested against k8s 1.33-1.36, so `v1.36.5+k3s1` is the newest version that keeps
-the CNI on a supported pair. Revisit when Cilium ships 1.37 support.
+**The newest k3s is deliberately not the target for this node**: the `latest`
+channel is `v1.37.1+k3s1`, but Cilium's compatibility page lists k8s 1.33-1.36 as
+e2e tested, so `v1.36.5+k3s1` (also the `stable` channel) is the newest version
+on a supported pair. Revisit when Cilium lists 1.37.
 
 ## CNI: Cilium
 
 [config.yaml](config.yaml) sets `flannel-backend: none` and
 `disable-network-policy: true`; the CNI is Cilium, deployed from
-`kubernetes/components/cilium` (chart pinned there, values too). Cilium and
-Hubble both live in `kube-system`, and the Flux `HelmRelease` lives there with
-them — only the `Kustomization` and `HelmRepository` stay in `flux-system`.
+`kubernetes/components/cilium` (chart version in `helmrelease.yaml`, values in
+`values.yaml`). Cilium and Hubble live in `kube-system`, and the Flux
+`HelmRelease` lives there with them - only the `Kustomization` and
+`HelmRepository` stay in `flux-system`.
 
 Why Cilium: NetworkPolicies are enforced by Cilium's datapath (k3s' kube-router
 controller is off) and Hubble gives per-flow L3/L4/L7 visibility.
 
-Two values are k3s-specific and **required** — without them Cilium writes its CNI
-config and binary to `/etc/cni` and `/opt/cni/bin`, which this node's containerd
-does not read, so new pods come up with no address:
+Why it is installed before Flux rather than by Flux: Flux needs a working pod
+network to start, and Cilium via Flux needs Flux. Installing it first with Helm
+and letting Flux adopt it afterwards removes that cycle. Upgrades afterwards go
+through Git (bump the version in `helmrelease.yaml`); the install script reads
+the same file.
 
-```yaml
-cni.binPath: /var/lib/rancher/k3s/data/cni
-cni.confPath: /var/lib/rancher/k3s/agent/etc/cni/net.d
-```
+How the install follows Cilium's [k3s guide](https://docs.cilium.io/en/stable/installation/k3s/)
+(flannel and network policy off, pod CIDR `10.42.0.0/16`, one operator replica),
+plus what the guide leaves out and a failed attempt tends to hit:
 
-### Switching an existing flannel cluster
-
-```bash
-cd ~/home-lab/cluster/k3s
-git pull
-sudo ./migrate-to-cilium.sh
-sudo reboot          # moves pods that still hold a flannel sandbox onto Cilium
-```
-
-The script backs up `/etc/rancher/k3s/config.yaml`, the CNI dir and the
-NetworkPolicies to `/root/k3s-cni-backup-<timestamp>/`, pre-pulls the Cilium
-images, refuses to overwrite a live config that drifted from the repo (override
-with `--force`), writes the new config, restarts k3s, applies the component
-(Flux' helm-controller installs the chart) and smoke-tests a pod: it must get an
-address from `10.42.0.0/16`, not share it with another pod, and resolve
-`kubernetes.default.svc.cluster.local`.
-
-Two windows exist between the k3s restart and the reboot, both expected:
-- **No NetworkPolicy is enforced** until Cilium's agents are ready (kube-router
-  is off, Cilium is not up yet). That is why the image pre-pull runs first.
-- New pods can take an address a live flannel pod still holds. The smoke test
-  fails if it sees a duplicate; either way, **reboot immediately**.
-
-`--reboot` does the reboot for you, but only use it once you have confirmed the
-node re-associates with WiFi by itself (this box is WiFi-only, with no console
-path other than physical access). Rebooting by hand keeps that visible.
-
-Local-path volumes and the sqlite datastore are untouched by the CNI switch.
-
-The `cilium` Flux Kustomization ships **suspended** — resume it only after the
-script has run, otherwise Cilium and flannel would both allocate from
-`10.42.0.0/16`:
-
-```bash
-flux resume kustomization cilium -n flux-system   # or merge the suspend:false commit
-```
+- **Prerequisites are checked first:** kernel >= 5.10, cgroup v2, the ability to
+  create a vxlan interface (minimal kernels need `linux-modules-extra-<ver>`), and
+  NetworkManager is told to leave `cilium_*`/`lxc*` interfaces alone.
+- **CNI directories are Cilium's defaults, and verified.** Cilium's k3s guide sets
+  no `cni.binPath`/`cni.confPath`, and neither does `values.yaml`. With
+  `flannel-backend: none` k3s writes no `[cni]` section into containerd's config
+  (it only sets `/var/lib/rancher/k3s/data/cni` and `.../agent/etc/cni/net.d` when
+  flannel is enabled; k3s `pkg/executor/embed/embed.go`), so containerd reads
+  `/etc/cni/net.d` and `/opt/cni/bin` - the chart defaults. Overriding the paths to
+  the flannel directories would make Cilium write where containerd never looks
+  (pods with no address, "cni plugin not initialized"). The script reads
+  `/var/lib/rancher/k3s/agent/etc/containerd/config.toml` and stops, printing the
+  values, if a future k3s sets different directories
+  ([k3s #10869](https://github.com/k3s-io/k3s/issues/10869)).
+- **API server via loopback** (`k8sServiceHost: 127.0.0.1:6443`): k3s serves the
+  API on 6443 including loopback. Not required with kube-proxy kept, but the agent
+  then does not depend on the Service VIP, and a changing WiFi address does not matter.
+- **Nothing else to configure on the host:** rp_filter is handled by the chart's
+  `apply-sysctl-overwrites` init container, `/sys/fs/bpf` is mounted by Cilium
+  (`bpf.autoMount`), and no conntrack/iptables userspace tools are required.
+- **Minimal first install:** Hubble and metrics are off for the bootstrap, so a slow
+  optional piece cannot fail the CNI. Flux' HelmRelease then upgrades the same
+  release to the full `values.yaml`.
+- **Smoke test:** node Ready, CoreDNS rolled out, and a fresh pod resolves
+  `kubernetes.default.svc.cluster.local`.
+- **On any failure** the script writes `/root/cilium-install-diagnostics.txt` (node
+  conditions, agent and init-container logs, CNI directory listings, links, k3s
+  journal) - paste that file when asking for help.
 
 ### Verify
 
@@ -192,30 +198,23 @@ k3s kubectl -n kube-system port-forward svc/hubble-relay 4245:80
 hubble observe --follow
 ```
 
-### Rollback
-
-```bash
-sudo ./migrate-to-cilium.sh --rollback
-sudo reboot
-```
-
-Restores the backed-up config, removes the Cilium HelmRelease and DaemonSets and
-drops its CNI config so k3s writes flannel's again. Cilium's CRDs, RBAC and the
-`cilium-cni` binary stay behind — harmless, but clean them up before a future
-re-install.
-
 ## Uninstall
 
 ```bash
 sudo ./uninstall-k3s.sh
+sudo reboot
 ```
+
+Besides k3s it removes Cilium's `cilium_*` interfaces, BPF pins and `CILIUM_*`
+iptables chains, which `k3s-uninstall.sh` does not know about. It also runs when
+the k3s binary is already gone, to clean up after a half-removed install.
 
 ## Configuration
 
 Edit [config.yaml](config.yaml) before installation to customize:
 - Network CIDRs (default: 10.42.0.0/16 for pods, 10.43.0.0/16 for services)
 - Disabled components (default: Traefik, ServiceLB)
-- CNI (default: Cilium — flannel and kube-router network policy enforcement off)
+- CNI (default: Cilium; flannel and kube-router network policy off - keep these in sync with the install script)
 
 See [K3s docs](https://docs.k3s.io/installation/configuration) for all options.
 
@@ -242,10 +241,8 @@ sudo ln -s /usr/local/bin/k3s /usr/local/bin/kubectl
 
 ```
 cluster/k3s/
-├── install-k3s.sh       # Installation script (pinned k3s version)
+├── install-k3s.sh       # Installs k3s (pinned) + Cilium
 ├── upgrade-k3s.sh       # Minor-version upgrade, one hop at a time
-├── migrate-to-cilium.sh # flannel -> Cilium switch, plus --rollback
-├── cilium-images.txt    # image pre-pull hints used by the migration
 ├── config.yaml          # K3s configuration (Cilium, no flannel)
 ├── uninstall-k3s.sh     # Cleanup script
 └── README.md            # This file

@@ -1,0 +1,59 @@
+# Single source of truth for Cilium's Helm values.
+#   - cluster/k3s/install-k3s.sh passes this file to `helm install` BEFORE Flux
+#     exists (a node with no CNI cannot run Flux' pods).
+#   - the HelmRelease in this directory reads it via valuesFrom, so Flux adopts
+#     that release and keeps it in sync from then on.
+#
+# Values that matter here:
+#   - ipam ... 10.42.0.0/16 must match the k3s cluster-cidr, or pods get IPs the
+#     node does not route.
+#   - kubeProxyReplacement false: k3s keeps kube-proxy for Services. Cilium still
+#     does the pod datapath, NetworkPolicies and Hubble. Flip this only together
+#     with "disable-kube-proxy: true" in the k3s config.
+cluster:
+  name: home-lab
+routingMode: tunnel
+tunnelProtocol: vxlan
+kubeProxyReplacement: "false"
+# The agent and operator run on the host network, so they can reach the k3s API
+# server on loopback. That avoids depending on kube-proxy having programmed the
+# kubernetes Service VIP yet, and survives the node's WiFi address changing.
+k8sServiceHost: 127.0.0.1
+k8sServicePort: 6443
+ipv4:
+  enabled: true
+ipv6:
+  enabled: false
+ipam:
+  mode: cluster-pool
+  operator:
+    clusterPoolIPv4PodCIDRList:
+      - 10.42.0.0/16
+    clusterPoolIPv4MaskSize: 24
+# cni.binPath / cni.confPath / cni.exclusive stay at the chart defaults
+# (/opt/cni/bin, /etc/cni/net.d, true) on purpose. With flannel-backend=none k3s
+# writes no [cni] section into containerd's config (it only sets its own CNI dirs
+# when flannel is enabled - k3s pkg/executor/embed/embed.go), so containerd uses
+# its defaults, which equal the chart defaults. Cilium's k3s guide sets no CNI
+# paths either. Pointing them at k3s' flannel directories would make Cilium write
+# its config where containerd never looks. install-k3s.sh verifies this.
+operator:
+  replicas: 1
+  prometheus:
+    enabled: true
+prometheus:
+  enabled: true
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: false
+  metrics:
+    enabled:
+      - dns:query;ignoreAAAA
+      - drop
+      - tcp
+      - flow
+      - icmp
+      - http

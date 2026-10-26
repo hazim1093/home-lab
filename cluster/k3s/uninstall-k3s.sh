@@ -80,8 +80,7 @@ confirm_uninstall() {
 # Check if K3s is installed
 check_k3s_installed() {
     if ! command -v k3s &> /dev/null; then
-        log_warning "K3s is not installed"
-        exit 0
+        log_warning "K3s binary not found - only leftover CNI/network state will be cleaned"
     fi
 }
 
@@ -214,6 +213,27 @@ cleanup_cni() {
     log_success "CNI configurations cleaned up"
 }
 
+# Clean up Cilium leftovers. k3s-uninstall.sh knows flannel/kube-router but not
+# Cilium, and stale cilium_* links, BPF pins or CILIUM_* iptables chains make the
+# next Cilium install fail in confusing ways.
+cleanup_cilium() {
+    log_info "Cleaning up Cilium network state..."
+
+    for link in cilium_host cilium_net cilium_vxlan cilium_geneve cilium_wg0; do
+        ip link delete "$link" &> /dev/null || true
+    done
+
+    for cmd in iptables ip6tables; do
+        if command -v "${cmd}-save" &> /dev/null; then
+            "${cmd}-save" | grep -v -i 'cilium' | "${cmd}-restore" || true
+        fi
+    done
+
+    rm -rf /var/run/cilium /run/cilium /sys/fs/bpf/cilium /sys/fs/bpf/tc 2>/dev/null || true
+
+    log_success "Cilium state cleaned up"
+}
+
 # Verify cleanup
 verify_cleanup() {
     log_info "Verifying cleanup..."
@@ -266,7 +286,9 @@ display_final_status() {
     echo "  - Firewalld: $(systemctl is-active firewalld 2>/dev/null || echo 'inactive')"
     echo
 
-    log_info "You can now reinstall K3s by running:"
+    log_warning "Reboot before reinstalling so no old interfaces or BPF programs survive:"
+    echo "  sudo reboot"
+    log_info "Then reinstall (k3s + Cilium) with:"
     echo "  sudo ./install-k3s.sh"
     echo
 }
@@ -290,6 +312,7 @@ main() {
     cleanup_kubeconfig
     cleanup_kubectl_symlink
     cleanup_cni
+    cleanup_cilium
     verify_cleanup
     display_final_status
 
