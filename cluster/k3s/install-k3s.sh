@@ -287,13 +287,21 @@ preflight_cilium() {
         exit 1
     fi
 
-    # Tunnel mode needs vxlan. Minimal/Raspberry Pi kernels sometimes lack the
-    # module (Ubuntu: linux-modules-extra-$(uname -r)).
-    modprobe vxlan 2> /dev/null || true
-    if ip link add cilium-preflight type vxlan id 1 dstport 8472 2> /dev/null; then
+    # Tunnel mode needs vxlan. Report what actually failed instead of guessing:
+    # a missing module (Ubuntu: linux-modules-extra-$(uname -r)) and a leftover
+    # interface from a previous install look different.
+    local modprobe_err ip_err
+    modprobe_err=$(modprobe vxlan 2>&1) || true
+    if ip_err=$(ip link add cilium-preflight type vxlan id 4242 dstport 8472 2>&1); then
         ip link delete cilium-preflight
     else
-        log_error "Cannot create a vxlan interface - install linux-modules-extra-$kver and retry"
+        log_error "Cannot create a vxlan interface: ${ip_err:-no output}"
+        [[ -n "$modprobe_err" ]] && log_error "modprobe vxlan: $modprobe_err"
+        if ip -br link | grep -q 'cilium_'; then
+            log_error "Leftover Cilium interfaces exist (run uninstall-k3s.sh and reboot):"
+            ip -br link | grep 'cilium_' >&2
+        fi
+        log_error "If the module is missing: apt install linux-modules-extra-$kver"
         exit 1
     fi
 
