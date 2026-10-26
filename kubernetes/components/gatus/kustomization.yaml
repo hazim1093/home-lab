@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - gatus-webhook-secret.yaml
+  - slack-webhook.yaml
   - rbac.yaml
   - helmrelease.yaml
   - httproute.yaml

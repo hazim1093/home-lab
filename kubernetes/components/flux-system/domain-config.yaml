@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: domain-config
+    namespace: flux-system
+type: Opaque
+stringData:
+    BASE_DOMAIN: ENC[AES256_GCM,data:i4z8S+7apofAPjisgqM3Ano=,iv:MLD+S/RxjnP/wU3si4SRG0qhcUIv7T90cWGfv1Y60AE=,tag:smb+233trEjNjT1RUvJiOQ==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3K20zK0NFZFUzdk5Yb1p4
+            QkwvYTBVNjJORTJUQk9BdHo4cDQ1cSt1WTNzCktLUzdmWjE4dkE3bUFzcTdZcFNz
+            cUFRN0ZDd3VyTXV0YXpoOXI4UndpakUKLS0tIDRZSGxGbDF3Z3Z4OVZXNUo5ZDh3
+            VFZCak5vRU12VTFPOFBPbXBoQXA3UzAKalKcEDTkddWzBCEGcclKi59Ay9hpGlYx
+            h0Py9IFc4W1MTjUcretBg9R1T5moKItdeqe3uASIX0WNJOeXTmhdFA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1s84t0ws8cpp8ujf8mny373gg63g9d52fezrdwe24jdfe4d309pwqvawpcu
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBlOTNMVjhYNDJRQ2pIQ1Ux
+            VUJoMkM4Q3cxcHpxTjh1SUZNRE42a1VCRVRFCnhhTXQySEJSZ1dYQXRKNURXcTFq
+            L1FlaGlhSFdKc1IvaThUVnlmYUxPdFUKLS0tIERqS1htT0FrOGUzSjMzT2tqeCtE
+            ZkZaTUZ2aFlMKytsMHF0ZDZqcVJKSzAKY1lx7mRY0jK2wT6yGP6e1OaiEwkNdpqN
+            DL/aMsJQ4fqDgGRg+ZQHsZs9xQT4O9iPgcqwE/h8VbDEdyT1iZI14g==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1470xftejp68uy54dn9vxwhnyuhgvpmf533nmn3mfya7uz558u3ls6v0r79
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-26T20:34:17Z"
+    mac: ENC[AES256_GCM,data:9lfxbtGQuiJsVq0AMRTefpvsv382kEALvBFToFAa8UqLMcZBTuxUfu6iCIrfL1lTZCBkWrK9i2IQLcyG11s+r9J8Z6pLg49KwEVLREv7Ml+9RH93cSe6OegMODAXGbrPHn/q4VTyOAp7YDMu/w9oSKbsv8iov2PwMLinuAfZfPE=,iv:x5Nv2m0owAvGJmxAWWggIVKadZ6HbvOOc13RTWlBBxk=,tag:TFJWs8uC5ncZXXKsmM4ZNQ==,type:str]
+    version: 3.13.3
