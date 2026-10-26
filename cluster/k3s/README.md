@@ -59,6 +59,12 @@ with the Helm CLI straight after k3s starts, using the chart version and
 `values.yaml` from `kubernetes/components/cilium`. When Flux is bootstrapped, its
 `cilium` HelmRelease (same release name and namespace) adopts that install.
 
+### Cilium failed but k3s is fine
+
+```bash
+sudo ./install-k3s.sh --cilium-only   # skips the k3s install; re-runs preflight, Cilium, smoke test
+```
+
 ### Rebuilding from scratch
 
 ```bash

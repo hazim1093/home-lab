@@ -529,6 +529,17 @@ main() {
     echo
 
     check_root
+
+    # k3s already installed and only the Cilium step failed: skip straight to it.
+    if [[ "${1:-}" == "--cilium-only" ]]; then
+        command -v k3s &> /dev/null || { log_error "k3s is not installed - run without --cilium-only"; exit 1; }
+        install_cilium
+        verify_installation
+        display_cluster_info
+        log_success "Cilium installation completed successfully!"
+        return
+    fi
+
     check_existing_installation
     install_prerequisites
     configure_firewall
