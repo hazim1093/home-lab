@@ -145,14 +145,31 @@ and letting Flux adopt it afterwards removes that cycle. Upgrades afterwards go
 through Git (bump the version in `helmrelease.yaml`); the install script reads
 the same file.
 
-Two values are k3s-specific and **required** - without them Cilium writes its CNI
-config and binary to `/etc/cni` and `/opt/cni/bin`, which this node's containerd
-does not read, so new pods come up with no address:
+How the install follows Cilium's [k3s guide](https://docs.cilium.io/en/stable/installation/k3s/)
+(flannel and network policy off, pod CIDR `10.42.0.0/16`, one operator replica),
+plus what the guide leaves out and a failed attempt tends to hit:
 
-```yaml
-cni.binPath: /var/lib/rancher/k3s/data/cni
-cni.confPath: /var/lib/rancher/k3s/agent/etc/cni/net.d
-```
+- **Prerequisites are checked first:** kernel >= 5.10, cgroup v2, the ability to
+  create a vxlan interface (minimal kernels need `linux-modules-extra-<ver>`), and
+  NetworkManager is told to leave `cilium_*`/`lxc*` interfaces alone.
+- **CNI directories are verified, not assumed.** Cilium must write its binary and
+  config to exactly the `bin_dir`/`conf_dir` in k3s' generated
+  `/var/lib/rancher/k3s/agent/etc/containerd/config.toml`; these have moved
+  between k3s versions ([k3s #10869](https://github.com/k3s-io/k3s/issues/10869)).
+  `values.yaml` pins them and the script stops with both values printed if they
+  disagree. Wrong paths show up as pods with no address or "cni plugin not
+  initialized".
+- **API server via loopback** (`k8sServiceHost: 127.0.0.1:6443`): the agent does
+  not depend on kube-proxy having programmed the Service VIP, and a changing WiFi
+  address does not matter.
+- **Minimal first install:** Hubble and metrics are off for the bootstrap, so a slow
+  optional piece cannot fail the CNI. Flux' HelmRelease then upgrades the same
+  release to the full `values.yaml`.
+- **Smoke test:** node Ready, CoreDNS rolled out, and a fresh pod resolves
+  `kubernetes.default.svc.cluster.local`.
+- **On any failure** the script writes `/root/cilium-install-diagnostics.txt` (node
+  conditions, agent and init-container logs, CNI directory listings, links, k3s
+  journal) - paste that file when asking for help.
 
 ### Verify
 

@@ -268,10 +268,118 @@ install_helm() {
     log_success "helm installed"
 }
 
-# Install Cilium BEFORE Flux. With flannel disabled the node has no CNI, so no
-# pod (including Flux' controllers) can start until Cilium is running. Chart
-# version and values come from the same files Flux uses, and the release is
-# named cilium/kube-system, so Flux' HelmRelease adopts it on bootstrap.
+# Kernel/network prerequisites Cilium needs. Fails early with a reason instead of
+# a crash-looping agent ten minutes later.
+preflight_cilium() {
+    log_info "Checking Cilium prerequisites..."
+
+    local kver major minor
+    kver=$(uname -r)
+    major=${kver%%.*}
+    minor=${kver#*.}; minor=${minor%%.*}
+    if (( major < 5 || (major == 5 && minor < 10) )); then
+        log_error "Kernel $kver is too old for Cilium (needs >= 5.10)"
+        exit 1
+    fi
+
+    if ! stat -fc %T /sys/fs/cgroup 2> /dev/null | grep -q cgroup2fs; then
+        log_error "cgroup v2 is not mounted at /sys/fs/cgroup (Cilium needs it)"
+        exit 1
+    fi
+
+    # Tunnel mode needs vxlan. Minimal/Raspberry Pi kernels sometimes lack the
+    # module (Ubuntu: linux-modules-extra-$(uname -r)).
+    modprobe vxlan 2> /dev/null || true
+    if ip link add cilium-preflight type vxlan id 1 dstport 8472 2> /dev/null; then
+        ip link delete cilium-preflight
+    else
+        log_error "Cannot create a vxlan interface - install linux-modules-extra-$kver and retry"
+        exit 1
+    fi
+
+    if ! mountpoint -q /sys/fs/bpf; then
+        mount bpffs /sys/fs/bpf -t bpf 2> /dev/null || log_warning "Could not mount /sys/fs/bpf (Cilium mounts it itself)"
+    fi
+
+    # NetworkManager must not touch Cilium's interfaces (WiFi boxes commonly run it).
+    if systemctl is-active --quiet NetworkManager 2> /dev/null; then
+        log_info "NetworkManager detected - marking Cilium interfaces unmanaged"
+        mkdir -p /etc/NetworkManager/conf.d
+        cat > /etc/NetworkManager/conf.d/99-cilium.conf <<'NMEOF'
+[keyfile]
+unmanaged-devices=interface-name:cilium_*;interface-name:lxc*
+NMEOF
+        systemctl reload NetworkManager || true
+    fi
+
+    log_success "Prerequisites OK (kernel $kver)"
+}
+
+# k3s writes the CNI dirs containerd actually uses into its generated config.
+# Cilium must write its binary/config to exactly those paths, and they differ
+# between k3s versions - so read them instead of trusting a hardcoded value.
+verify_cni_paths() {
+    local values_file=$1
+    local toml=/var/lib/rancher/k3s/agent/etc/containerd/config.toml
+    local attempt=0
+    until [[ -f "$toml" ]]; do
+        attempt=$((attempt + 1))
+        if [[ $attempt -ge 60 ]]; then
+            log_error "containerd config $toml never appeared"
+            exit 1
+        fi
+        sleep 2
+    done
+
+    local bin_dir conf_dir want_bin want_conf
+    bin_dir=$(sed -n 's/^[[:space:]]*bin_dir[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' "$toml" | head -n1)
+    conf_dir=$(sed -n 's/^[[:space:]]*conf_dir[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' "$toml" | head -n1)
+    want_bin=$(awk '/^[[:space:]]+binPath:/ {gsub(/"/, "", $2); print $2; exit}' "$values_file")
+    want_conf=$(awk '/^[[:space:]]+confPath:/ {gsub(/"/, "", $2); print $2; exit}' "$values_file")
+
+    log_info "containerd CNI dirs: bin_dir=$bin_dir conf_dir=$conf_dir"
+    if [[ "$bin_dir" != "$want_bin" || "$conf_dir" != "$want_conf" ]]; then
+        log_error "containerd's CNI dirs do not match cilium values.yaml"
+        log_error "  containerd: bin_dir=$bin_dir conf_dir=$conf_dir"
+        log_error "  values.yaml: cni.binPath=$want_bin cni.confPath=$want_conf"
+        log_error "Update cni.binPath/cni.confPath in $values_file to the containerd values and re-run."
+        exit 1
+    fi
+}
+
+# Everything needed to diagnose a failed Cilium install in one paste-able file.
+cilium_diagnostics() {
+    local out=/root/cilium-install-diagnostics.txt
+    log_warning "Cilium did not come up - collecting diagnostics into $out"
+    {
+        echo "### date";               date
+        echo "### uname";              uname -a
+        echo "### nodes";              k3s kubectl get nodes -o wide
+        echo "### node conditions";    k3s kubectl describe node | sed -n '/Conditions:/,/Addresses:/p'
+        echo "### kube-system pods";   k3s kubectl -n kube-system get pods -o wide
+        echo "### cilium describe";    k3s kubectl -n kube-system describe ds/cilium | tail -60
+        for c in config mount-cgroup apply-sysctl-overwrites mount-bpf-fs clean-cilium-state install-cni-binaries; do
+            echo "### cilium init container: $c"
+            k3s kubectl -n kube-system logs ds/cilium -c "$c" --tail=40 2>&1
+        done
+        echo "### cilium-agent logs";  k3s kubectl -n kube-system logs ds/cilium -c cilium-agent --tail=120 2>&1
+        echo "### operator logs";      k3s kubectl -n kube-system logs deploy/cilium-operator --tail=60 2>&1
+        echo "### CNI dirs"
+        ls -la /var/lib/rancher/k3s/data/cni /var/lib/rancher/k3s/agent/etc/cni/net.d /etc/cni/net.d /opt/cni/bin 2>&1
+        echo "### links";              ip -br link
+        echo "### k3s journal";        journalctl -u k3s --no-pager -n 80
+    } > "$out" 2>&1 || true
+    log_warning "Paste $out when asking for help"
+}
+
+# Install Cilium BEFORE Flux, following Cilium's own k3s guide
+# (docs.cilium.io/en/stable/installation/k3s). With flannel disabled the node has
+# no CNI, so no pod - Flux' controllers included - can start until Cilium runs.
+#
+# Bootstrap installs a minimal Cilium (no Hubble/metrics) so that anything slow or
+# optional cannot fail the CNI itself. Flux' HelmRelease (same release name and
+# namespace, same chart version) then adopts it and upgrades to the full
+# values.yaml, so any failure from there on is isolated from basic networking.
 install_cilium() {
     if ! grep -qE '^flannel-backend:[[:space:]]*none' /etc/rancher/k3s/config.yaml; then
         log_warning "flannel is enabled in config.yaml - skipping Cilium"
@@ -291,19 +399,37 @@ install_cilium() {
         exit 1
     fi
 
+    preflight_cilium
     wait_for_api
+    verify_cni_paths "$component/values.yaml"
     install_helm
 
-    log_info "Installing Cilium $version (this pulls images, a few minutes)..."
+    log_info "Installing Cilium $version (minimal; this pulls images, a few minutes)..."
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-    helm upgrade --install cilium cilium \
+    if ! helm upgrade --install cilium cilium \
         --repo https://helm.cilium.io \
         --version "$version" \
         --namespace kube-system \
         --values "$component/values.yaml" \
-        --wait --timeout 10m
-
+        --set hubble.enabled=false \
+        --set hubble.relay.enabled=false \
+        --set prometheus.enabled=false \
+        --set operator.prometheus.enabled=false \
+        --wait --timeout 8m; then
+        cilium_diagnostics
+        exit 1
+    fi
     log_success "Cilium $version installed"
+
+    log_info "Smoke test: node Ready, CoreDNS up, a new pod resolves cluster DNS..."
+    if ! k3s kubectl wait --for=condition=Ready node --all --timeout=180s \
+        || ! k3s kubectl -n kube-system rollout status deploy/coredns --timeout=180s \
+        || ! k3s kubectl run cilium-smoke --rm -i --restart=Never --image=busybox:1.36 --timeout=120s \
+            -- nslookup kubernetes.default.svc.cluster.local; then
+        cilium_diagnostics
+        exit 1
+    fi
+    log_success "Pod networking and cluster DNS work"
 }
 
 # Verify installation

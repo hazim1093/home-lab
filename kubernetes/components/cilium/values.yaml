@@ -15,6 +15,11 @@ cluster:
 routingMode: tunnel
 tunnelProtocol: vxlan
 kubeProxyReplacement: "false"
+# The agent and operator run on the host network, so they can reach the k3s API
+# server on loopback. That avoids depending on kube-proxy having programmed the
+# kubernetes Service VIP yet, and survives the node's WiFi address changing.
+k8sServiceHost: 127.0.0.1
+k8sServicePort: 6443
 ipv4:
   enabled: true
 ipv6:
@@ -28,8 +33,10 @@ ipam:
 cni:
   exclusive: true
   # k3s keeps containerd's CNI dirs under /var/lib/rancher, not /etc/cni.
-  # With the chart defaults Cilium writes its config and binary where the
-  # k3s kubelet never looks and pods come up without an address.
+  # With the chart defaults Cilium writes its config and binary where
+  # containerd never looks and pods come up without an address. These must
+  # equal bin_dir/conf_dir in /var/lib/rancher/k3s/agent/etc/containerd/config.toml;
+  # install-k3s.sh checks that and refuses to continue on a mismatch.
   binPath: /var/lib/rancher/k3s/data/cni
   confPath: /var/lib/rancher/k3s/agent/etc/cni/net.d
 operator:
