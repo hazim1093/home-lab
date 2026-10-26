@@ -1,12 +1,7 @@
-# Cilium replaces k3s' flannel as the CNI (see cluster/k3s/README.md).
-#
-# Values that matter here:
-#   - ipam ... 10.42.0.0/16 must match the k3s cluster-cidr, or pods get IPs the
-#     node does not route.
-#   - kubeProxyReplacement false: k3s keeps kube-proxy for Services. Cilium still
-#     does the pod datapath, NetworkPolicies and Hubble. Flip this only together
-#     with "disable-kube-proxy: true" in the k3s config.
-#   - install/upgrade crds: HelmRelease defaults to skipping CRDs, Cilium needs them.
+# Cilium is the CNI (see cluster/k3s/README.md). On a fresh node it is installed
+# by cluster/k3s/install-k3s.sh with the same chart version and values.yaml, then
+# Flux adopts the existing Helm release (same name + namespace) and owns upgrades.
+# Bump the chart version here only - the install script reads it from this file.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -29,46 +24,7 @@ spec:
   upgrade:
     crds: CreateReplace
     timeout: 10m
-  values:
-    cluster:
-      name: home-lab
-    routingMode: tunnel
-    tunnelProtocol: vxlan
-    kubeProxyReplacement: "false"
-    ipv4:
-      enabled: true
-    ipv6:
-      enabled: false
-    ipam:
-      mode: cluster-pool
-      operator:
-        clusterPoolIPv4PodCIDRList:
-          - 10.42.0.0/16
-        clusterPoolIPv4MaskSize: 24
-    cni:
-      exclusive: true
-      # k3s keeps containerd's CNI dirs under /var/lib/rancher, not /etc/cni.
-      # With the chart defaults Cilium writes its config and binary where the
-      # k3s kubelet never looks and pods come up without an address.
-      binPath: /var/lib/rancher/k3s/data/cni
-      confPath: /var/lib/rancher/k3s/agent/etc/cni/net.d
-    operator:
-      replicas: 1
-      prometheus:
-        enabled: true
-    prometheus:
-      enabled: true
-    hubble:
-      enabled: true
-      relay:
-        enabled: true
-      ui:
-        enabled: false
-      metrics:
-        enabled:
-          - dns:query;ignoreAAAA
-          - drop
-          - tcp
-          - flow
-          - icmp
-          - http
+  valuesFrom:
+  - kind: ConfigMap
+    name: cilium-values
+    valuesKey: values.yaml

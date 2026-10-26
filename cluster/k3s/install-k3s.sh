@@ -3,8 +3,9 @@
 ################################################################################
 # K3s Installation Script for Ubuntu/Debian
 #
-# This script installs K3s on Ubuntu Server or Debian with automatic
-# configuration and auto-start on boot.
+# Installs K3s with automatic configuration and auto-start on boot, then
+# installs Cilium (the CNI) so the node is Ready before Flux is bootstrapped.
+# Order on a new node: this script -> Flux bootstrap (kubernetes/bootstrap/flux).
 ################################################################################
 
 set -euo pipefail
@@ -116,7 +117,7 @@ configure_firewall() {
             # K3s server ports
             ufw allow 6443/tcp comment 'K3s API' > /dev/null 2>&1
             ufw allow 10250/tcp comment 'K3s Kubelet' > /dev/null 2>&1
-            ufw allow 8472/udp comment 'K3s Flannel VXLAN' > /dev/null 2>&1
+            ufw allow 8472/udp comment 'Cilium/K3s VXLAN' > /dev/null 2>&1
             ufw allow 51820/udp comment 'K3s Wireguard' > /dev/null 2>&1
             ufw allow 51821/udp comment 'K3s Wireguard' > /dev/null 2>&1
 
@@ -172,6 +173,7 @@ install_k3s() {
     # Download and install K3s.
     # Pinned: a rebuild must land on the same version as upgrade-k3s.sh's plan.
     export INSTALL_K3S_SKIP_START=false
+    # v1.36 is the newest k8s that Cilium 1.20 is tested against (1.33-1.36).
     export INSTALL_K3S_VERSION="${INSTALL_K3S_VERSION:-v1.36.5+k3s1}"
 
     curl -sfL https://get.k3s.io | sh -
@@ -219,6 +221,89 @@ configure_kubeconfig() {
     fi
 
     log_success "Kubeconfig configured"
+}
+
+# Wait for the API server (the node stays NotReady until Cilium is installed)
+wait_for_api() {
+    log_info "Waiting for the API server..."
+    local attempt=0
+    until k3s kubectl get --raw=/healthz &> /dev/null; do
+        attempt=$((attempt + 1))
+        if [[ $attempt -ge 90 ]]; then
+            log_error "Timeout waiting for the API server"
+            journalctl -u k3s --no-pager -n 30 || true
+            exit 1
+        fi
+        sleep 2
+    done
+    log_success "API server is up"
+}
+
+# Install the Helm CLI (only needed to bootstrap Cilium; Flux takes over after)
+install_helm() {
+    if command -v helm &> /dev/null; then
+        log_info "helm is already installed: $(helm version --short)"
+        return
+    fi
+
+    local version="${HELM_VERSION:-v3.18.6}"
+    local arch
+    case "$(uname -m)" in
+        x86_64)  arch=amd64 ;;
+        aarch64) arch=arm64 ;;
+        armv7l)  arch=arm ;;
+        *) log_error "Unsupported CPU architecture: $(uname -m)"; exit 1 ;;
+    esac
+
+    log_info "Installing helm $version ($arch)..."
+    local tmp
+    tmp=$(mktemp -d)
+    local tarball="helm-${version}-linux-${arch}.tar.gz"
+    curl -sfL "https://get.helm.sh/${tarball}" -o "$tmp/$tarball"
+    curl -sfL "https://get.helm.sh/${tarball}.sha256sum" -o "$tmp/$tarball.sha256sum"
+    (cd "$tmp" && sha256sum -c "$tarball.sha256sum" > /dev/null)
+    tar -xzf "$tmp/$tarball" -C "$tmp"
+    install -m 0755 "$tmp/linux-${arch}/helm" /usr/local/bin/helm
+    rm -rf "$tmp"
+    log_success "helm installed"
+}
+
+# Install Cilium BEFORE Flux. With flannel disabled the node has no CNI, so no
+# pod (including Flux' controllers) can start until Cilium is running. Chart
+# version and values come from the same files Flux uses, and the release is
+# named cilium/kube-system, so Flux' HelmRelease adopts it on bootstrap.
+install_cilium() {
+    if ! grep -qE '^flannel-backend:[[:space:]]*none' /etc/rancher/k3s/config.yaml; then
+        log_warning "flannel is enabled in config.yaml - skipping Cilium"
+        return
+    fi
+
+    local script_dir component version
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    component="$script_dir/../../kubernetes/components/cilium"
+    if [[ ! -f "$component/values.yaml" || ! -f "$component/helmrelease.yaml" ]]; then
+        log_error "Cilium component not found at $component - run from a full checkout of home-lab"
+        exit 1
+    fi
+    version=$(awk '/chart: cilium/ {f=1} f && /version:/ {gsub(/"/, "", $2); print $2; exit}' "$component/helmrelease.yaml")
+    if [[ -z "$version" ]]; then
+        log_error "Could not read the Cilium chart version from helmrelease.yaml"
+        exit 1
+    fi
+
+    wait_for_api
+    install_helm
+
+    log_info "Installing Cilium $version (this pulls images, a few minutes)..."
+    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+    helm upgrade --install cilium cilium \
+        --repo https://helm.cilium.io \
+        --version "$version" \
+        --namespace kube-system \
+        --values "$component/values.yaml" \
+        --wait --timeout 10m
+
+    log_success "Cilium $version installed"
 }
 
 # Verify installation
@@ -286,19 +371,10 @@ display_cluster_info() {
     echo
 
     log_info "Next steps:"
-    echo "  1. Deploy your applications with kubectl"
-    echo "  2. Access cluster: kubectl get nodes"
+    echo "  1. Bootstrap Flux: see kubernetes/bootstrap/flux/README.md"
+    echo "     (Cilium is already running; Flux adopts it from kubernetes/components/cilium)"
+    echo "  2. Check the CNI: k3s kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg status --brief"
     echo
-
-    # config.yaml disables flannel; on a fresh node there is no CNI and Flux
-    # cannot install Cilium before Flux itself is bootstrapped.
-    if grep -qE '^flannel-backend:[[:space:]]*none' /etc/rancher/k3s/config.yaml; then
-        log_warning "flannel is disabled in config.yaml."
-        echo "  Fresh build: comment out flannel-backend/disable-network-policy in"
-        echo "  config.yaml, re-run this script, bootstrap Flux, then run"
-        echo "  migrate-to-cilium.sh (it switches the CNI on a running cluster)."
-        echo
-    fi
 }
 
 # Main installation flow
@@ -317,6 +393,7 @@ main() {
     disable_swap
     install_k3s
     configure_kubeconfig
+    install_cilium
     verify_installation
     display_cluster_info
 

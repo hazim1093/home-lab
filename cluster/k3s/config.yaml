@@ -4,7 +4,7 @@
 # Write kubeconfig with proper permissions (readable by non-root users)
 write-kubeconfig-mode: "0644"
 
-# Disable Traefik (we'll use NGINX Ingress instead)
+# Disable the bundled Traefik/ServiceLB (Traefik and MetalLB come from Flux)
 disable:
   - traefik
   - servicelb
@@ -16,9 +16,10 @@ cluster-cidr: "10.42.0.0/16"
 # Default service CIDR
 service-cidr: "10.43.0.0/16"
 
-# CNI: Cilium (kubernetes/components/cilium), so flannel and kube-router's
-# network policy controller must be off. Run cluster/k3s/migrate-to-cilium.sh
-# to switch a running cluster - never flip this without installing Cilium.
+# CNI: Cilium (kubernetes/components/cilium). flannel and kube-router's network
+# policy controller must be off. install-k3s.sh installs Cilium right after k3s
+# starts (before Flux) - never start k3s with these set and no Cilium, the node
+# stays NotReady with no CNI.
 flannel-backend: none
 disable-network-policy: true
 
