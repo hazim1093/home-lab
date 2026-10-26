@@ -23,23 +23,20 @@ echo "fs.inotify.max_user_instances=512" | sudo tee -a /etc/sysctl.conf
 
 ## Secrets Management (SOPS)
 
-```bash
-# Restore age key from backup
-mkdir -p .age && echo "BACKED_UP_KEY" > .age/key.txt
+⚠️ **Required first time:**
 
-# Deploy key to cluster
+```bash
+# Restore age key, create cluster secret
+mkdir -p .age && echo "YOUR_AGE_KEY" > .age/key.txt
 cat .age/key.txt | kubectl create secret generic sops-age \
   --namespace=flux-system --from-file=age.agekey=/dev/stdin
+```
 
-# Encrypt secrets
+Encrypt secrets:
+```bash
 export SOPS_AGE_KEY_FILE=.age/key.txt
 sops --encrypt --in-place secret.yaml
-
-# Edit encrypted secrets
-sops secret.yaml
-
-# Decrypt secrets
-sops --decrypt secret.yaml > decrypted.yaml
+sops secret.yaml  # edit encrypted
 ```
 
 ### Agent (Hermes) key access
