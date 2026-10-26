@@ -315,11 +315,12 @@ NMEOF
     log_success "Prerequisites OK (kernel $kver)"
 }
 
-# k3s writes the CNI dirs containerd actually uses into its generated config.
-# Cilium must write its binary/config to exactly those paths, and they differ
-# between k3s versions - so read them instead of trusting a hardcoded value.
+# Cilium writes its CNI config/binary to the chart defaults (/etc/cni/net.d,
+# /opt/cni/bin). containerd must read the same directories. With flannel-backend=none
+# k3s emits no [cni] section, so containerd uses those defaults; k3s only sets its
+# own dirs (/var/lib/rancher/k3s/...) when flannel is enabled. Verify instead of
+# assuming, because a mismatch gives pods with no address and no useful error.
 verify_cni_paths() {
-    local values_file=$1
     local toml=/var/lib/rancher/k3s/agent/etc/containerd/config.toml
     local attempt=0
     until [[ -f "$toml" ]]; do
@@ -331,20 +332,26 @@ verify_cni_paths() {
         sleep 2
     done
 
-    local bin_dir conf_dir want_bin want_conf
-    bin_dir=$(sed -n 's/^[[:space:]]*bin_dir[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' "$toml" | head -n1)
-    conf_dir=$(sed -n 's/^[[:space:]]*conf_dir[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' "$toml" | head -n1)
-    want_bin=$(awk '/^[[:space:]]+binPath:/ {gsub(/"/, "", $2); print $2; exit}' "$values_file")
-    want_conf=$(awk '/^[[:space:]]+confPath:/ {gsub(/"/, "", $2); print $2; exit}' "$values_file")
+    local bin_dir conf_dir
+    bin_dir=$(grep -E '^[[:space:]]*bin_dirs?[[:space:]]*=' "$toml" | head -n1 || true)
+    conf_dir=$(grep -E '^[[:space:]]*conf_dir[[:space:]]*=' "$toml" | head -n1 || true)
 
-    log_info "containerd CNI dirs: bin_dir=$bin_dir conf_dir=$conf_dir"
-    if [[ "$bin_dir" != "$want_bin" || "$conf_dir" != "$want_conf" ]]; then
-        log_error "containerd's CNI dirs do not match cilium values.yaml"
-        log_error "  containerd: bin_dir=$bin_dir conf_dir=$conf_dir"
-        log_error "  values.yaml: cni.binPath=$want_bin cni.confPath=$want_conf"
-        log_error "Update cni.binPath/cni.confPath in $values_file to the containerd values and re-run."
-        exit 1
+    if [[ -z "$bin_dir" && -z "$conf_dir" ]]; then
+        log_info "containerd uses its default CNI dirs (/opt/cni/bin, /etc/cni/net.d) - matches Cilium"
+        return
     fi
+
+    # An override is only fine if it is the default spelled out.
+    if { [[ -z "$bin_dir" ]] || [[ "$bin_dir" == *'/opt/cni/bin'* ]]; } \
+        && { [[ -z "$conf_dir" ]] || [[ "$conf_dir" == *'"/etc/cni/net.d"'* ]]; }; then
+        return
+    fi
+
+    log_error "containerd's CNI dirs differ from Cilium's defaults:"
+    log_error "  ${bin_dir:-bin_dir unset}"
+    log_error "  ${conf_dir:-conf_dir unset}"
+    log_error "Set cni.binPath/cni.confPath in kubernetes/components/cilium/values.yaml to these paths and re-run."
+    exit 1
 }
 
 # Everything needed to diagnose a failed Cilium install in one paste-able file.
@@ -365,7 +372,8 @@ cilium_diagnostics() {
         echo "### cilium-agent logs";  k3s kubectl -n kube-system logs ds/cilium -c cilium-agent --tail=120 2>&1
         echo "### operator logs";      k3s kubectl -n kube-system logs deploy/cilium-operator --tail=60 2>&1
         echo "### CNI dirs"
-        ls -la /var/lib/rancher/k3s/data/cni /var/lib/rancher/k3s/agent/etc/cni/net.d /etc/cni/net.d /opt/cni/bin 2>&1
+        ls -la /etc/cni/net.d /opt/cni/bin /var/lib/rancher/k3s/agent/etc/cni/net.d /var/lib/rancher/k3s/data/cni 2>&1
+        echo "### containerd cni config"; grep -n -i -A3 "cni" /var/lib/rancher/k3s/agent/etc/containerd/config.toml 2>&1
         echo "### links";              ip -br link
         echo "### k3s journal";        journalctl -u k3s --no-pager -n 80
     } > "$out" 2>&1 || true
@@ -401,7 +409,7 @@ install_cilium() {
 
     preflight_cilium
     wait_for_api
-    verify_cni_paths "$component/values.yaml"
+    verify_cni_paths
     install_helm
 
     log_info "Installing Cilium $version (minimal; this pulls images, a few minutes)..."
@@ -424,7 +432,7 @@ install_cilium() {
     log_info "Smoke test: node Ready, CoreDNS up, a new pod resolves cluster DNS..."
     if ! k3s kubectl wait --for=condition=Ready node --all --timeout=180s \
         || ! k3s kubectl -n kube-system rollout status deploy/coredns --timeout=180s \
-        || ! k3s kubectl run cilium-smoke --rm -i --restart=Never --image=busybox:1.36 --timeout=120s \
+        || ! k3s kubectl run cilium-smoke --rm -i --restart=Never --image=busybox:1.36 --pod-running-timeout=2m \
             -- nslookup kubernetes.default.svc.cluster.local; then
         cilium_diagnostics
         exit 1

@@ -30,15 +30,13 @@ ipam:
     clusterPoolIPv4PodCIDRList:
       - 10.42.0.0/16
     clusterPoolIPv4MaskSize: 24
-cni:
-  exclusive: true
-  # k3s keeps containerd's CNI dirs under /var/lib/rancher, not /etc/cni.
-  # With the chart defaults Cilium writes its config and binary where
-  # containerd never looks and pods come up without an address. These must
-  # equal bin_dir/conf_dir in /var/lib/rancher/k3s/agent/etc/containerd/config.toml;
-  # install-k3s.sh checks that and refuses to continue on a mismatch.
-  binPath: /var/lib/rancher/k3s/data/cni
-  confPath: /var/lib/rancher/k3s/agent/etc/cni/net.d
+# cni.binPath / cni.confPath / cni.exclusive stay at the chart defaults
+# (/opt/cni/bin, /etc/cni/net.d, true) on purpose. With flannel-backend=none k3s
+# writes no [cni] section into containerd's config (it only sets its own CNI dirs
+# when flannel is enabled - k3s pkg/executor/embed/embed.go), so containerd uses
+# its defaults, which equal the chart defaults. Cilium's k3s guide sets no CNI
+# paths either. Pointing them at k3s' flannel directories would make Cilium write
+# its config where containerd never looks. install-k3s.sh verifies this.
 operator:
   replicas: 1
   prometheus:

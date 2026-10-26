@@ -122,10 +122,10 @@ running.
 There is no cross-minor downgrade in k3s: reverting means restoring that
 datastore + binary (a control-plane state rebuild) or redeploying the node.
 
-**The newest k3s is deliberately not the target for this node**: Cilium 1.20 is
-tested against k8s 1.33-1.36, so `v1.36.5+k3s1` is the newest version that keeps
-the CNI on a supported pair (k3s v1.37 exists, but Cilium has not listed it).
-Revisit when Cilium ships 1.37 support.
+**The newest k3s is deliberately not the target for this node**: the `latest`
+channel is `v1.37.1+k3s1`, but Cilium's compatibility page lists k8s 1.33-1.36 as
+e2e tested, so `v1.36.5+k3s1` (also the `stable` channel) is the newest version
+on a supported pair. Revisit when Cilium lists 1.37.
 
 ## CNI: Cilium
 
@@ -152,16 +152,23 @@ plus what the guide leaves out and a failed attempt tends to hit:
 - **Prerequisites are checked first:** kernel >= 5.10, cgroup v2, the ability to
   create a vxlan interface (minimal kernels need `linux-modules-extra-<ver>`), and
   NetworkManager is told to leave `cilium_*`/`lxc*` interfaces alone.
-- **CNI directories are verified, not assumed.** Cilium must write its binary and
-  config to exactly the `bin_dir`/`conf_dir` in k3s' generated
-  `/var/lib/rancher/k3s/agent/etc/containerd/config.toml`; these have moved
-  between k3s versions ([k3s #10869](https://github.com/k3s-io/k3s/issues/10869)).
-  `values.yaml` pins them and the script stops with both values printed if they
-  disagree. Wrong paths show up as pods with no address or "cni plugin not
-  initialized".
-- **API server via loopback** (`k8sServiceHost: 127.0.0.1:6443`): the agent does
-  not depend on kube-proxy having programmed the Service VIP, and a changing WiFi
-  address does not matter.
+- **CNI directories are Cilium's defaults, and verified.** Cilium's k3s guide sets
+  no `cni.binPath`/`cni.confPath`, and neither does `values.yaml`. With
+  `flannel-backend: none` k3s writes no `[cni]` section into containerd's config
+  (it only sets `/var/lib/rancher/k3s/data/cni` and `.../agent/etc/cni/net.d` when
+  flannel is enabled; k3s `pkg/executor/embed/embed.go`), so containerd reads
+  `/etc/cni/net.d` and `/opt/cni/bin` - the chart defaults. Overriding the paths to
+  the flannel directories would make Cilium write where containerd never looks
+  (pods with no address, "cni plugin not initialized"). The script reads
+  `/var/lib/rancher/k3s/agent/etc/containerd/config.toml` and stops, printing the
+  values, if a future k3s sets different directories
+  ([k3s #10869](https://github.com/k3s-io/k3s/issues/10869)).
+- **API server via loopback** (`k8sServiceHost: 127.0.0.1:6443`): k3s serves the
+  API on 6443 including loopback. Not required with kube-proxy kept, but the agent
+  then does not depend on the Service VIP, and a changing WiFi address does not matter.
+- **Nothing else to configure on the host:** rp_filter is handled by the chart's
+  `apply-sysctl-overwrites` init container, `/sys/fs/bpf` is mounted by Cilium
+  (`bpf.autoMount`), and no conntrack/iptables userspace tools are required.
 - **Minimal first install:** Hubble and metrics are off for the bootstrap, so a slow
   optional piece cannot fail the CNI. Flux' HelmRelease then upgrades the same
   release to the full `values.yaml`.
