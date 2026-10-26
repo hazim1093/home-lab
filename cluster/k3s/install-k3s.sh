@@ -292,8 +292,8 @@ preflight_cilium() {
     # interface from a previous install look different.
     local modprobe_err ip_err
     modprobe_err=$(modprobe vxlan 2>&1) || true
-    if ip_err=$(ip link add cilium-preflight type vxlan id 4242 dstport 8472 2>&1); then
-        ip link delete cilium-preflight
+    if ip_err=$(ip link add cil-preflight type vxlan id 4242 dstport 8472 2>&1); then
+        ip link delete cil-preflight
     else
         log_error "Cannot create a vxlan interface: ${ip_err:-no output}"
         [[ -n "$modprobe_err" ]] && log_error "modprobe vxlan: $modprobe_err"
@@ -301,7 +301,9 @@ preflight_cilium() {
             log_error "Leftover Cilium interfaces exist (run uninstall-k3s.sh and reboot):"
             ip -br link | grep 'cilium_' >&2
         fi
-        log_error "If the module is missing: apt install linux-modules-extra-$kver"
+        if [[ "$ip_err" == *"Unknown device type"* || "$ip_err" == *"not supported"* ]]; then
+            log_error "The vxlan module is missing: apt install linux-modules-extra-$kver"
+        fi
         exit 1
     fi
 
