@@ -5,6 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
+    - name: gateway-api
     - name: cert-manager
   interval: 10m
   path: ./kubernetes/components/traefik
