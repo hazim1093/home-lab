@@ -5,7 +5,10 @@ metadata:
   namespace: arc-system
 spec:
   interval: 12h
+  install:
+    crds: CreateReplace
   upgrade:
+    crds: CreateReplace
     remediation:
       retries: 5
   chart:
