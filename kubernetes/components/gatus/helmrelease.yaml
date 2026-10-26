@@ -39,7 +39,7 @@ spec:
 
       alerting:
         slack:
-          webhook-url: "${SLACK_WEBHOOK_URL}"
+          webhook-url: "$${SLACK_WEBHOOK_URL}"
           default-alert:
             failure-threshold: 3
             success-threshold: 2
