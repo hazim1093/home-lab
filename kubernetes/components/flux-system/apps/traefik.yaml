@@ -6,7 +6,6 @@ metadata:
 spec:
   dependsOn:
     - name: cert-manager
-    - name: gateway-api
   interval: 10m
   path: ./kubernetes/components/traefik
   prune: true

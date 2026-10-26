@@ -10,7 +10,6 @@ resources:
 - cert-manager.yaml
 - cilium.yaml
 - certificates.yaml
-- gateway-api.yaml
 - traefik.yaml
 - home-assistant.yaml
 - ha-mcp.yaml

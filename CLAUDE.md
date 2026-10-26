@@ -23,7 +23,6 @@ If asked to add DNS entries, secrets, or config referencing real infrastructure 
 - [Secrets Management](#secrets-management)
 - [Service Exposure Patterns](#service-exposure-patterns)
 - [DNS and Networking](#dns-and-networking)
-- [Gateway API](#gateway-api)
 - [Certificate Management](#certificate-management)
 - [Common Patterns Reference](#common-patterns-reference)
 
@@ -789,59 +788,6 @@ parentRefs:
 - name: traefik-gateway
   namespace: traefik
   sectionName: websecure  # or 'web' for HTTP
-```
-
----
-
-## Gateway API
-
-### What is Gateway API?
-
-The **Kubernetes Gateway API** is the standard for configuring routing and load balancing in Kubernetes. It replaces the older Ingress API and provides more flexibility and control.
-
-**Key Concepts:**
-- **Gateway**: Cluster-level load balancer configuration (like Traefik)
-- **HTTPRoute**: HTTP(S) routing rules (like Ingress)
-- **TLSStore**: Custom TLS certificate storage (Traefik-specific)
-
-### Installation & Deployment
-
-**Location**: `kubernetes/components/gateway-api/`
-
-The Gateway API CRDs are **not** automatically included in K3s — they must be installed explicitly before Traefik or any HTTPRoute resources can be used.
-
-**How it works:**
-1. **gateway-api.yaml** (in `flux-system/apps/`) installs the Gateway API CRDs from the official upstream source
-2. Traefik depends on this component (`dependsOn: gateway-api`)
-3. All HTTPRoute resources work once Gateway API is ready
-
-**Version**: v1.2.0 (latest stable from `kubernetes-sigs/gateway-api`)
-
-**CRDs Installed:**
-- `Gateway`, `GatewayClass`
-- `HTTPRoute`, `GRPCRoute`, `TCPRoute`, `UDPRoute`
-- `ReferenceGrant`, `BackendTLSPolicy`
-
-### Why Not a K3s Feature Flag?
-
-K3s v1.27+ supports Gateway API natively, but:
-- The CRDs are **opt-in**, not auto-installed
-- No K3s config flag exists to auto-enable them
-- Must be installed as cluster-wide resources
-- Installing from upstream source ensures consistency across versions
-
-### Dependency Order
-
-When adding new HTTPRoute resources, ensure this order:
-
-```
-gateway-api (CRDs) ← required first
-  ↓
-cert-manager (TLS issuers)
-  ↓
-traefik (ingress controller)
-  ↓
-your-app (with HTTPRoute)
 ```
 
 ---
