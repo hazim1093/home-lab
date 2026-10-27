@@ -30,7 +30,7 @@ spec:
           name: home-assistant-custom-components
     additionalMounts:
       - name: config
-        mountPath: /config/configuration.yaml
+        mountPath: /defaults/configuration.yaml
         subPath: configuration.yaml
     initContainers:
       - name: create-config-files
@@ -39,7 +39,14 @@ spec:
           - sh
           - -c
           - |
-            # Create automation files if they don't exist
+            # Copy configuration.yaml from defaults only if not present (preserves backup restores)
+            if [ ! -f "/config/configuration.yaml" ]; then
+              echo "Copying default configuration.yaml"
+              cp /defaults/configuration.yaml /config/configuration.yaml
+            else
+              echo "/config/configuration.yaml already exists"
+            fi
+            # Create stub files if they don't exist
             for file in automations.yaml scripts.yaml scenes.yaml; do
               if [ ! -f "/config/$file" ]; then
                 echo "Creating /config/$file"
@@ -55,6 +62,8 @@ spec:
         volumeMounts:
           - name: home-assistant
             mountPath: /config
+          - name: config
+            mountPath: /defaults
       - name: install-custom-components
         image: busybox:1.38
         command:
