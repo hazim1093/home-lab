@@ -42,6 +42,20 @@ spec:
       port: 53
     - protocol: TCP
       port: 53
+  # Allow the Kubernetes API: kubectl from the agent authenticates with the
+  # in-pod SA token. The ClusterIP 10.43.0.1:443 DNATs to kube-apiserver on the
+  # node at 6443, so both the service range (443) and the node range (6443)
+  # must be allowed - 6443 is not covered by the 80/443 rule below.
+  - to:
+    - ipBlock:
+        cidr: 10.43.0.0/16
+    - ipBlock:
+        cidr: 192.168.0.0/16
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 6443
   # Allow HTTP/HTTPS to external model providers and services
   - to:
     - ipBlock:
