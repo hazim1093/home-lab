@@ -7,8 +7,14 @@ data:
   configuration.yaml: |
     default_config:
 
-    # HTTP settings (use_x_forwarded_for / trusted_proxies) are managed in
-    # the UI: Settings > System > Network (YAML config deprecated since 2025.1)
+    # Reverse proxy trust. HA 2026.8+ imports this block into .storage/http on
+    # the first start and ignores it afterwards, so the patch-http-proxy-trust
+    # init container (helmrelease.yaml) keeps the store in sync on every start.
+    http:
+      use_x_forwarded_for: true
+      trusted_proxies:
+        - 10.42.0.0/16
+        - 10.43.0.0/16
     automation: !include automations.yaml
     script: !include scripts.yaml
     scene: !include scenes.yaml
