@@ -42,13 +42,10 @@ spec:
       port: 53
     - protocol: TCP
       port: 53
-  # Allow the Kubernetes API: kubectl from the agent authenticates with the
-  # in-pod SA token. The ClusterIP 10.43.0.1:443 DNATs to kube-apiserver on the
-  # node at 6443, so both the service range (443) and the node range (6443)
-  # must be allowed - 6443 is not covered by the 80/443 rule below.
+  # Allow the API on the node address range. The ClusterIP itself cannot be
+  # granted here: Cilium resolves it to the reserved kube-apiserver identity,
+  # which ipBlock never matches - that grant is in ciliumnetworkpolicy.yaml.
   - to:
-    - ipBlock:
-        cidr: 10.43.0.0/16
     - ipBlock:
         cidr: 192.168.0.0/16
     ports:
