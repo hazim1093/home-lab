@@ -9,6 +9,7 @@ resources:
   - secret.yaml
   - dashboard-internal-auth-secret.yaml
   - networkpolicy.yaml
+  - ciliumnetworkpolicy.yaml
   - agent-serviceaccount.yaml
   - agent-extra-clusterrole.yaml
   - agent-clusterrolebinding.yaml

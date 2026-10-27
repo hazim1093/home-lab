@@ -1,0 +1,21 @@
+# The vanilla NetworkPolicy cannot grant this: Cilium is the CNI, and after the
+# `kubernetes` ClusterIP is resolved the kube-apiserver carries the reserved
+# `kube-apiserver` identity, which ipBlock CIDRs never match. Result without
+# this policy: egress to 10.43.0.1:443 is dropped and kubectl times out, even
+# though the node CIDR/port is allowed in networkpolicy.yaml.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-kube-apiserver
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+  - toEntities:
+    - kube-apiserver
+  - toServices:
+    - k8sService:
+        namespace: default
+        serviceName: kubernetes
