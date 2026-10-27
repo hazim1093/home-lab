@@ -7,12 +7,8 @@ data:
   configuration.yaml: |
     default_config:
 
-    # Reverse proxy trust for Traefik pods (pod CIDR, see cluster/k3s/config.yaml).
-    # HA 2026.8+ imports this once into .storage/http, then ignores YAML.
-    http:
-      use_x_forwarded_for: true
-      trusted_proxies:
-        - 10.42.0.0/16
+    # HTTP settings (use_x_forwarded_for / trusted_proxies) are managed in
+    # the UI: Settings > System > Network (YAML config deprecated since 2025.1)
     automation: !include automations.yaml
     script: !include scripts.yaml
     scene: !include scenes.yaml
