@@ -30,7 +30,7 @@ spec:
           name: home-assistant-custom-components
     additionalMounts:
       - name: config
-        mountPath: /config/configuration.yaml
+        mountPath: /defaults/configuration.yaml
         subPath: configuration.yaml
     initContainers:
       - name: create-config-files
@@ -39,27 +39,30 @@ spec:
           - sh
           - -c
           - |
-            # Ensure .storage/http has trusted_proxies (not included in backups)
+            # Copy configuration.yaml from defaults only if absent (lets backup restore overwrite it)
+            if [ ! -f "/config/configuration.yaml" ]; then
+              cp /defaults/configuration.yaml /config/configuration.yaml
+            fi
+            # Ensure .storage/http has trusted_proxies (backup restore fails to write it due to EBUSY on config.yaml)
             mkdir -p /config/.storage
             if ! grep -q "use_x_forwarded_for" /config/.storage/http 2>/dev/null; then
               printf '%s\n' '{"version":2,"minor_version":2,"key":"http","data":{"stable":{"server_port":8123,"cors_allowed_origins":["https://cast.home-assistant.io"],"login_attempts_threshold":-1,"ip_ban_enabled":true,"ssl_profile":"modern","use_x_frame_options":true,"use_x_forwarded_for":true,"trusted_proxies":["10.42.0.0/16"],"error":null,"error_message":null},"pending":null,"yaml_migration_done":true}}' > /config/.storage/http
             fi
-            # Create automation files if they don't exist
+            # Create stub files if they don't exist
             for file in automations.yaml scripts.yaml scenes.yaml; do
               if [ ! -f "/config/$file" ]; then
-                echo "Creating /config/$file"
                 if [ "$file" = "scripts.yaml" ]; then
                   echo "{}" > "/config/$file"
                 else
                   echo "[]" > "/config/$file"
                 fi
-              else
-                echo "/config/$file already exists"
               fi
             done
         volumeMounts:
           - name: home-assistant
             mountPath: /config
+          - name: config
+            mountPath: /defaults
       - name: install-custom-components
         image: busybox:1.38
         command:
