@@ -7,14 +7,12 @@ data:
   configuration.yaml: |
     default_config:
 
-    # Reverse proxy trust. HA 2026.8+ imports this block into .storage/http on
-    # the first start and ignores it afterwards, so the patch-http-proxy-trust
-    # init container (helmrelease.yaml) keeps the store in sync on every start.
+    # Reverse proxy trust for Traefik pods (pod CIDR, see cluster/k3s/config.yaml).
+    # HA 2026.8+ imports this once into .storage/http, then ignores YAML.
     http:
       use_x_forwarded_for: true
       trusted_proxies:
         - 10.42.0.0/16
-        - 10.43.0.0/16
     automation: !include automations.yaml
     script: !include scripts.yaml
     scene: !include scenes.yaml
