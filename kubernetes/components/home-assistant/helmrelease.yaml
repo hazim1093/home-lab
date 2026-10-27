@@ -110,51 +110,6 @@ spec:
             mountPath: /config
           - name: custom-components
             mountPath: /custom-components
-      # HA 2026.8+ keeps HTTP server settings in .storage/http and ignores the
-      # configuration.yaml http: block after the one-time import, so a rebuild
-      # (or a restore of an older backup) loses the proxy trust and every
-      # request through Traefik gets 400 Bad Request from the forwarded module.
-      # Patch the store before HA starts; a no-op when it is already correct.
-      - name: patch-http-proxy-trust
-        image: ghcr.io/home-assistant/home-assistant:2026.10.2
-        command:
-          - python3
-          - -c
-          - |
-            import json, os, pathlib, sys
-            store = pathlib.Path("/config/.storage/http")
-            if not store.is_file():
-                print("no .storage/http yet - the http: block in configuration.yaml is imported on first start")
-                sys.exit(0)
-            try:
-                doc = json.loads(store.read_text())
-            except Exception as exc:
-                print(f"unreadable .storage/http, leaving it to HA: {exc}")
-                sys.exit(0)
-            slots = doc.setdefault("data", {})
-            changed = []
-            for slot in ("stable", "pending"):
-                cfg = slots.get(slot)
-                if not isinstance(cfg, dict):
-                    continue
-                if cfg.get("use_x_forwarded_for") is not True:
-                    cfg["use_x_forwarded_for"] = True
-                    changed.append(slot)
-                proxies = cfg.setdefault("trusted_proxies", [])
-                for cidr in ("10.42.0.0/16", "10.43.0.0/16"):
-                    if cidr not in proxies:
-                        proxies.append(cidr)
-                        if slot not in changed:
-                            changed.append(slot)
-            if changed:
-                store.write_text(json.dumps(doc))
-                os.chmod(store, 0o600)
-                print("patched HTTP proxy trust in slot(s):", ", ".join(sorted(set(changed))))
-            else:
-                print("HTTP proxy trust already configured")
-        volumeMounts:
-          - name: home-assistant
-            mountPath: /config
 
   # Pin the dishwasher's Home Connect Local hostname to its IP at pod level
   # (no mDNS in k8s; chart lacks a hostAliases value, hence this patch)
