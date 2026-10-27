@@ -53,6 +53,13 @@ spec:
       port: 443
     - protocol: TCP
       port: 6443
+  # Zigbee2MQTT frontend/API on the Pi (hallon) for admin + diagnostics
+  - to:
+    - ipBlock:
+        cidr: 192.168.0.39/32
+    ports:
+    - protocol: TCP
+      port: 8080
   # Allow HTTP/HTTPS to external model providers and services
   - to:
     - ipBlock:
