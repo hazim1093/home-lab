@@ -44,8 +44,8 @@ operator:
 prometheus:
   enabled: true
 bpf:
-  # Chart default "all" also traces PSH,ACK / bare ACK; agent default is enough.
-  monitorFlags: "syn,fin,rst"
+  # Space-separated: Viper parses this with strings.Fields, commas are one token.
+  monitorFlags: "syn fin rst"
 hubble:
   enabled: true
   relay:
