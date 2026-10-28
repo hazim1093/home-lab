@@ -1,0 +1,11 @@
+.terraform*
+todo
+
+# SOPS age encryption keys (NEVER commit these!)
+.age/
+age.agekey
+*.agekey
+key.txt
+decrypted.yaml
+.decrypted~secret.yaml
+.decrypted~*.yaml

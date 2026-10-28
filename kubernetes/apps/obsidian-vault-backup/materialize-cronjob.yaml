@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: obsidian-vault-materialize
+  namespace: obsidian
+spec:
+  schedule: "0 * * * *" # Hourly
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: livesync-cli
+            image: ghcr.io/vrtmrz/livesync-cli:1.0.32-cli
+            # mirror = one sync cycle between local db and vault dir, then exit.
+            args: ["/data", "--vault", "/vault", "mirror"]
+            volumeMounts:
+            - name: db
+              mountPath: /data
+            - name: vault
+              mountPath: /vault
+            - name: settings
+              mountPath: /data/.livesync/settings.json
+              subPath: settings.json
+          volumes:
+          - name: db
+            persistentVolumeClaim:
+              claimName: obsidian-livesync-db
+          - name: vault
+            persistentVolumeClaim:
+              claimName: obsidian-vault-data
+          - name: settings
+            secret:
+              secretName: obsidian-vault-backup-livesync

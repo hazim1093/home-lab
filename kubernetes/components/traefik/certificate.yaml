@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: local-wildcard-cert
+  namespace: traefik
+spec:
+  secretName: local-wildcard-cert
+  duration: 2160h # 90 days (Let's Encrypt default)
+  renewBefore: 360h # 15 days
+  dnsNames:
+  - "*.${LOCAL_DOMAIN}"
+  - "${LOCAL_DOMAIN}"
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+    group: cert-manager.io
+  privateKey:
+    rotationPolicy: Always

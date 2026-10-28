@@ -1,0 +1,34 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: homarr
+  namespace: homarr
+  annotations:
+    gatus.home-operations.com/enabled: "true"
+    gatus.home-operations.com/endpoint: |
+      url: "http://homarr.homarr.svc.cluster.local:7575/api/health/ready"
+      interval: 60s
+      conditions:
+        - "[STATUS] == 200"
+    homarr.dev/enabled: "true"
+    homarr.dev/category: "Homelab Components"
+    homarr.dev/name: "Homarr"
+    homarr.dev/url: "https://homarr.${LOCAL_DOMAIN}"
+    homarr.dev/icon: "homarr"
+    homarr.dev/description: "integrations, drag and drop"
+    homarr.dev/ping-url: "http://homarr.homarr.svc.cluster.local:7575/api/health/ready"
+spec:
+  parentRefs:
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: websecure
+  hostnames:
+  - "homarr.${LOCAL_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: homarr
+      port: 7575

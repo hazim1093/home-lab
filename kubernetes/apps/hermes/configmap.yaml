@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-config
+  namespace: hermes
+data:
+  API_SERVER_HOST: "0.0.0.0"
+  HERMES_UID: "10000"
+  HERMES_GID: "10000"

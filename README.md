@@ -1,0 +1,54 @@
+# home-lab
+Home lab
+
+## Node Tuning
+
+### inotify limits (required for K3s + ARC runners)
+
+K3s, Flux, Grafana Alloy, and ARC runner pods all register inotify watchers. The default kernel limits are too low and cause runner pods to crash on startup with `failed to create fsnotify watcher: too many open files`.
+
+Apply on the K3s node:
+
+```bash
+sudo sysctl -w fs.inotify.max_user_watches=524288
+sudo sysctl -w fs.inotify.max_user_instances=512
+```
+
+Make permanent (survives reboots):
+
+```bash
+echo "fs.inotify.max_user_watches=524288" | sudo tee -a /etc/sysctl.conf
+echo "fs.inotify.max_user_instances=512" | sudo tee -a /etc/sysctl.conf
+```
+
+## Secrets Management (SOPS)
+
+⚠️ **Required first time:**
+
+```bash
+# Restore age key, create cluster secret
+mkdir -p .age && echo "YOUR_AGE_KEY" > .age/key.txt
+cat .age/key.txt | kubectl create secret generic sops-age \
+  --namespace=flux-system --from-file=age.agekey=/dev/stdin
+```
+
+Encrypt secrets:
+```bash
+export SOPS_AGE_KEY_FILE=.age/key.txt
+sops --encrypt --in-place secret.yaml
+sops secret.yaml  # edit encrypted
+```
+
+### Agent (Hermes) key access
+
+Hermes (the agent box) decrypts with its own age key — an extra recipient
+listed in `.sops.yaml`. Your key and the cluster's `sops-age` secret are
+unaffected.
+
+```bash
+# Re-wrap existing encrypted files to include the agent key
+sops updatekeys -r kubernetes/
+
+# Revoke the agent: remove its key from .sops.yaml, then re-wrap again
+sops updatekeys -r kubernetes/
+```

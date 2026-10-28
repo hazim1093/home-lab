@@ -1,0 +1,84 @@
+# A single "task manager" style dashboard: two sortable tables ranking
+# workloads (namespace/pod) by CPU and memory usage, highest first.
+# None of the dotdc standard dashboards (dashboards-dotdc.yaml) provide this
+# exact view - they're time-series graphs, not a ranked table.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: top-workloads
+  namespace: grafana-operator
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana-cloud
+  folder: Kubernetes
+  json: |
+    {
+      "title": "Top Workloads (CPU & Memory)",
+      "uid": "top-workloads",
+      "tags": ["kubernetes"],
+      "timezone": "browser",
+      "editable": true,
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "1m",
+      "time": { "from": "now-1h", "to": "now" },
+      "panels": [
+        {
+          "id": 1,
+          "type": "table",
+          "title": "Top CPU Consuming Pods",
+          "description": "sum by (namespace, pod) of rate(container_cpu_usage_seconds_total[5m]), sorted descending",
+          "gridPos": { "h": 12, "w": 24, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+              "expr": "topk(25, sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{container!=\"\", container!=\"POD\"}[5m])))",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "Value": "CPU (cores)" } } },
+            { "id": "sortBy", "options": { "fields": {}, "sort": [ { "field": "CPU (cores)", "desc": true } ] } }
+          ],
+          "fieldConfig": {
+            "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" } } },
+            "overrides": [
+              { "matcher": { "id": "byName", "options": "CPU (cores)" }, "properties": [ { "id": "unit", "value": "short" }, { "id": "decimals", "value": 3 }, { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "gradient" } } ] }
+            ]
+          },
+          "options": { "sortBy": [ { "displayName": "CPU (cores)", "desc": true } ] }
+        },
+        {
+          "id": 2,
+          "type": "table",
+          "title": "Top Memory Consuming Pods",
+          "description": "sum by (namespace, pod) of container_memory_working_set_bytes, sorted descending",
+          "gridPos": { "h": 12, "w": 24, "x": 0, "y": 12 },
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+              "expr": "topk(25, sum by (namespace, pod) (container_memory_working_set_bytes{container!=\"\", container!=\"POD\"}))",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "Value": "Memory" } } },
+            { "id": "sortBy", "options": { "fields": {}, "sort": [ { "field": "Memory", "desc": true } ] } }
+          ],
+          "fieldConfig": {
+            "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" } } },
+            "overrides": [
+              { "matcher": { "id": "byName", "options": "Memory" }, "properties": [ { "id": "unit", "value": "bytes" }, { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "gradient" } } ] }
+            ]
+          },
+          "options": { "sortBy": [ { "displayName": "Memory", "desc": true } ] }
+        }
+      ]
+    }

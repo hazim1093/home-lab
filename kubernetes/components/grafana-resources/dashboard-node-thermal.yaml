@@ -1,0 +1,135 @@
+# Thermal history for the node: temperatures, PSI pressure and ACPI cooling state.
+# Exists because "the fan is loud" was previously unanswerable - none of the dotdc
+# dashboards chart temperature, and none of these metrics were even being shipped.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: node-thermal
+  namespace: grafana-operator
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana-cloud
+  folder: Kubernetes
+  json: |
+    {
+      "title": "Node Thermals & Pressure",
+      "uid": "node-thermal",
+      "tags": ["kubernetes", "node"],
+      "timezone": "browser",
+      "editable": true,
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "5m",
+      "time": { "from": "now-24h", "to": "now" },
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "Temperatures",
+          "description": "node_hwmon_temp_celsius joined with node_hwmon_chip_names (k10temp = CPU die, amdgpu = iGPU, hp = vendor WMI) plus ACPI thermal zones. No CPU-package sensor is exposed on mini-pc-01, so k10temp is the closest proxy.",
+          "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+              "expr": "node_hwmon_temp_celsius * on(chip) group_left(chip_name) node_hwmon_chip_names",
+              "legendFormat": "{{chip_name}} {{sensor}}"
+            },
+            {
+              "refId": "B",
+              "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+              "expr": "node_thermal_zone_temp",
+              "legendFormat": "zone {{type}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "celsius",
+              "min": 20,
+              "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 8, "showPoints": "never" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 60 },
+                  { "color": "orange", "value": 70 },
+                  { "color": "red", "value": 80 }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "zone iwlwifi_1" },
+                "properties": [ { "id": "unit", "value": "celsius" }, { "id": "custom.lineStyle", "value": { "dash": [10, 10], "fill": "dash" } } ]
+              }
+            ]
+          },
+          "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Pressure stall (share of wall time)",
+          "description": "rate(node_pressure_*_seconds_total[5m]) x 100. cpu_waiting is the useful one here: the node runs ~21% busy with no iowait, so any sustained CPU waiting means real contention rather than throughput.",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+              "expr": "rate(node_pressure_cpu_waiting_seconds_total[5m]) * 100",
+              "legendFormat": "cpu waiting"
+            },
+            {
+              "refId": "B",
+              "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+              "expr": "rate(node_pressure_io_waiting_seconds_total[5m]) * 100",
+              "legendFormat": "io waiting"
+            },
+            {
+              "refId": "C",
+              "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+              "expr": "rate(node_pressure_memory_waiting_seconds_total[5m]) * 100",
+              "legendFormat": "memory waiting"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 8, "showPoints": "never" }
+            },
+            "overrides": []
+          },
+          "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } }
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "ACPI cooling state (passive throttling)",
+          "description": "node_cooling_device_cur_state for the four Processor cooling devices. 0 = no throttling, 10 = maximum (node_cooling_device_max_state). Non-zero here means the firmware is already slowing the CPU to control heat.",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+              "expr": "node_cooling_device_cur_state",
+              "legendFormat": "{{type}} {{name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "max": 10,
+              "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 8, "showPoints": "never", "axisSoftMax": 10 }
+            },
+            "overrides": []
+          },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } }
+        }
+      ]
+    }

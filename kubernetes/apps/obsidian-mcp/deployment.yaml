@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: obsidian-mcp
+  namespace: obsidian-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: obsidian-mcp
+  template:
+    metadata:
+      labels:
+        app: obsidian-mcp
+    spec:
+      containers:
+      - name: obsidian-mcp
+        image: ghcr.io/es617/obsidian-sync-mcp:latest
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8787"
+        - name: DATA_DIR
+          value: /data
+        - name: VAULT_NAME
+          value: selfhosted
+        # In-cluster service DNS, not the tailnet URL.
+        - name: COUCHDB_URL
+          value: http://couchdb-svc-couchdb.couchdb.svc.cluster.local:5984
+        - name: COUCHDB_USER
+          value: livesync
+        - name: COUCHDB_DATABASE
+          value: obsidian
+        - name: COUCHDB_OBFUSCATE_PROPERTIES
+          value: "true"
+        - name: COUCHDB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: obsidian-mcp-env
+              key: COUCHDB_PASSWORD
+        - name: COUCHDB_PASSPHRASE
+          valueFrom:
+            secretKeyRef:
+              name: obsidian-mcp-env
+              key: COUCHDB_PASSPHRASE
+        - name: MCP_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: obsidian-mcp-env
+              key: MCP_AUTH_TOKEN
+        ports:
+        - name: mcp
+          containerPort: 8787
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: obsidian-mcp-data

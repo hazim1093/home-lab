@@ -1,0 +1,30 @@
+# Cilium is the CNI (see cluster/k3s/README.md). On a fresh node it is installed
+# by cluster/k3s/install-k3s.sh with the same chart version and values.yaml, then
+# Flux adopts the existing Helm release (same name + namespace) and owns upgrades.
+# Bump the chart version here only - the install script reads it from this file.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cilium
+  namespace: kube-system
+spec:
+  interval: 12h
+  chart:
+    spec:
+      chart: cilium
+      version: "1.20.4"
+      sourceRef:
+        kind: HelmRepository
+        name: cilium
+        namespace: flux-system
+      interval: 12h
+  install:
+    crds: Create
+    timeout: 10m
+  upgrade:
+    crds: CreateReplace
+    timeout: 10m
+  valuesFrom:
+  - kind: ConfigMap
+    name: cilium-values
+    valuesKey: values.yaml

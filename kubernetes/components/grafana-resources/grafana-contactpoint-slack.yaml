@@ -1,0 +1,20 @@
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaContactPoint
+metadata:
+  name: slack
+  namespace: grafana-operator
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana-cloud
+  name: slack
+  receivers:
+  - uid: slack
+    type: slack
+    settings: {}
+    valuesFrom:
+    - targetPath: url
+      valueFrom:
+        secretKeyRef:
+          name: grafana-slack-webhook-url
+          key: url

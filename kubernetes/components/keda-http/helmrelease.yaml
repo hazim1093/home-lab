@@ -1,0 +1,19 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keda-http
+  namespace: keda-http
+spec:
+  interval: 12h
+  upgrade:
+    remediation:
+      retries: 5
+  chart:
+    spec:
+      chart: keda-add-ons-http
+      version: "0.x"
+      sourceRef:
+        kind: HelmRepository
+        name: kedacore
+        namespace: flux-system
+      interval: 12h

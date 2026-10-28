@@ -1,0 +1,136 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: home-assistant
+  namespace: home-assistant
+spec:
+  interval: 12h
+  chart:
+    spec:
+      chart: home-assistant
+      version: "0.3.87"
+      sourceRef:
+        kind: HelmRepository
+        name: home-assistant
+        namespace: flux-system
+      interval: 12h
+  values:
+    persistence:
+      enabled: true
+      size: 5Gi
+    service:
+      type: ClusterIP
+      port: 8123
+    additionalVolumes:
+      - name: config
+        configMap:
+          name: home-assistant-config
+      - name: custom-components
+        configMap:
+          name: home-assistant-custom-components
+    additionalMounts:
+      - name: config
+        mountPath: /defaults/configuration.yaml
+        subPath: configuration.yaml
+    initContainers:
+      - name: create-config-files
+        image: busybox:1.38
+        command:
+          - sh
+          - -c
+          - |
+            # Copy configuration.yaml from defaults only if absent (lets backup restore overwrite it)
+            if [ ! -f "/config/configuration.yaml" ]; then
+              cp /defaults/configuration.yaml /config/configuration.yaml
+            fi
+            # Ensure .storage/http has trusted_proxies (backup restore fails to write it due to EBUSY on config.yaml)
+            mkdir -p /config/.storage
+            if ! grep -q "use_x_forwarded_for" /config/.storage/http 2>/dev/null; then
+              printf '%s\n' '{"version":2,"minor_version":2,"key":"http","data":{"stable":{"server_port":8123,"cors_allowed_origins":["https://cast.home-assistant.io"],"login_attempts_threshold":-1,"ip_ban_enabled":true,"ssl_profile":"modern","use_x_frame_options":true,"use_x_forwarded_for":true,"trusted_proxies":["10.42.0.0/16"],"error":null,"error_message":null},"pending":null,"yaml_migration_done":true}}' > /config/.storage/http
+            fi
+            # Create stub files if they don't exist
+            for file in automations.yaml scripts.yaml scenes.yaml; do
+              if [ ! -f "/config/$file" ]; then
+                if [ "$file" = "scripts.yaml" ]; then
+                  echo "{}" > "/config/$file"
+                else
+                  echo "[]" > "/config/$file"
+                fi
+              fi
+            done
+        volumeMounts:
+          - name: home-assistant
+            mountPath: /config
+          - name: config
+            mountPath: /defaults
+      - name: install-custom-components
+        image: busybox:1.38
+        command:
+          - sh
+          - -c
+          - |
+            set -e
+            mkdir -p /config/custom_components
+
+            # custom_components must only contain component dirs - clean up
+            # stray files left by the old flat extraction
+            find /config/custom_components -maxdepth 1 -type f -delete
+
+            while IFS='|' read -r name url || [ -n "$name" ]; do
+              if [ -z "$name" ]; then
+                continue
+              fi
+              case "$name" in \#*) continue ;; esac
+
+              # Trim whitespace (block scalar indent / stray spaces)
+              name=$(printf '%s' "$name" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+              url=$(printf '%s' "$url" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+              [ -z "$name" ] && continue
+
+              echo "Installing $name..."
+              wget -qO /tmp/component.zip "$url"
+              rm -rf /tmp/extract
+              mkdir -p /tmp/extract
+              unzip -q /tmp/component.zip -d /tmp/extract
+
+              # Locate the component dir: flat zips keep files at the archive
+              # root (manifest.json), source archives nest it under
+              # custom_components/<name> (possibly in a wrapper folder)
+              if [ -f /tmp/extract/manifest.json ]; then
+                src=/tmp/extract
+              else
+                src=$(find /tmp/extract -type d -path "*/custom_components/$name" | head -1)
+                if [ -z "$src" ]; then
+                  echo "ERROR: could not locate component '$name' in archive"
+                  exit 1
+                fi
+              fi
+
+              # Overwrite so a version bump in the manifest applies on next start
+              rm -rf "/config/custom_components/$name"
+              mkdir -p "/config/custom_components/$name"
+              cp -r "$src"/. "/config/custom_components/$name/"
+              rm -rf /tmp/extract /tmp/component.zip
+              echo "$name installed"
+            done < /custom-components/components.txt
+        volumeMounts:
+          - name: home-assistant
+            mountPath: /config
+          - name: custom-components
+            mountPath: /custom-components
+
+  # Pin the dishwasher's Home Connect Local hostname to its IP at pod level
+  # (no mDNS in k8s; chart lacks a hostAliases value, hence this patch)
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: StatefulSet
+              name: home-assistant
+            patch: |-
+              - op: add
+                path: /spec/template/spec/hostAliases
+                value:
+                  - ip: 192.168.0.84
+                    hostnames:
+                      - bosch-dishwasher-012060522931003141

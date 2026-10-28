@@ -1,0 +1,12 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: home-lab-private
+  namespace: flux-system
+spec:
+  interval: 1m
+  ref:
+    branch: main
+  url: ssh://git@github.com/hazim1093/home-lab-private
+  secretRef:
+    name: home-lab-private-auth

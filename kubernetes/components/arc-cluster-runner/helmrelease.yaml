@@ -1,0 +1,34 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: arc-cluster-runner
+  namespace: arc-system
+spec:
+  interval: 12h
+  dependsOn:
+    - name: arc-controller
+      namespace: arc-system
+  chart:
+    spec:
+      chart: gha-runner-scale-set
+      version: "0.15.0"
+      sourceRef:
+        kind: HelmRepository
+        name: arc
+        namespace: flux-system
+      interval: 12h
+  values:
+    # TODO: workaround — personal accounts don't support account-level runners (only orgs do).
+    # Scoped to screener-rag for now. Fix options: create a GitHub org, or add per-repo runners for each new repo.
+    githubConfigUrl: "https://github.com/hazim1093/screener-rag"
+    githubConfigSecret: arc-cluster-runner-secret
+    runnerScaleSetName: arc-cluster-runner
+    minRunners: 0
+    maxRunners: 1
+    template:
+      spec:
+        serviceAccountName: arc-cluster-runner
+        containers:
+          - name: runner
+            image: ghcr.io/hazim1093/arc-runner:latest
+            command: ["/home/runner/run.sh"]

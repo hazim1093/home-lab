@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - tools-install-job.yaml
+  - pull-secret.yaml
+  - configmap.yaml
+  - secret.yaml
+  - dashboard-internal-auth-secret.yaml
+  - networkpolicy.yaml
+  - ciliumnetworkpolicy.yaml
+  - agent-serviceaccount.yaml
+  - agent-extra-clusterrole.yaml
+  - agent-clusterrolebinding.yaml
+  - deployment.yaml
+  - service.yaml
+  - httproute.yaml
+images:
+  - name: docker.io/nousresearch/hermes-agent
+    newTag: v0.22.2

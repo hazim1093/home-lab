@@ -1,0 +1,19 @@
+# Scales paperless 0<->1 based on traffic through the KEDA HTTP interceptor.
+apiVersion: http.keda.sh/v1alpha1
+kind: HTTPScaledObject
+metadata:
+  name: paperless
+  namespace: paperless
+spec:
+  hosts:
+  - "paperless.${LOCAL_DOMAIN}"
+  scaleTargetRef:
+    name: paperless
+    kind: Deployment
+    apiVersion: apps/v1
+    service: paperless
+    port: 8000
+  replicas:
+    min: 0
+    max: 1
+  scaledownPeriod: 300

@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: obsidian-mcp-restrict-ingress
+  namespace: obsidian-mcp
+spec:
+  podSelector:
+    matchLabels:
+      app: obsidian-mcp
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    # Only the hermes pod (MCP client) may reach this.
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: hermes

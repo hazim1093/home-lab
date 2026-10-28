@@ -1,0 +1,11 @@
+# Ansible runtime files
+*.retry
+.ansible/
+
+# Local configuration overrides
+ansible/inventory.local.yml
+ansible/group_vars/*.local.yml
+ansible/group_vars/all/*.local.yml
+
+# Zigbee2MQTT data (generated on Pi)
+data/

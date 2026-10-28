@@ -1,0 +1,43 @@
+# K3s Server Configuration
+# Documentation: https://docs.k3s.io/installation/configuration
+
+# Write kubeconfig with proper permissions (readable by non-root users)
+write-kubeconfig-mode: "0644"
+
+# Disable the bundled Traefik/ServiceLB (Traefik and MetalLB come from Flux)
+disable:
+  - traefik
+  - servicelb
+
+# Cluster networking
+# Default pod CIDR
+cluster-cidr: "10.42.0.0/16"
+
+# Default service CIDR
+service-cidr: "10.43.0.0/16"
+
+# CNI: Cilium (kubernetes/components/cilium). flannel and kube-router's network
+# policy controller must be off. install-k3s.sh installs Cilium right after k3s
+# starts (before Flux) - never start k3s with these set and no Cilium, the node
+# stays NotReady with no CNI.
+flannel-backend: none
+disable-network-policy: true
+
+# Kubelet configuration
+# Enable metrics for kubectl top
+# kubelet-arg:
+#   - "resolv-conf=/etc/resolv.conf"
+
+# TLS settings
+# Use system certificates
+# tls-san:
+#   - "your-domain.com"
+#   - "192.168.1.100"
+
+# Node labels (optional)
+# node-label:
+#   - "node.kubernetes.io/type=worker"
+
+# Node taints (optional - uncomment if needed)
+# node-taint:
+#   - "key=value:NoSchedule"
