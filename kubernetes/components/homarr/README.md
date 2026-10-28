@@ -36,9 +36,9 @@ Caveats while on the beta:
 | `homarr.dev/enabled` | `"true"` to manage the route |
 | `homarr.dev/name` | app + tile name (required) |
 | `homarr.dev/url` | link target, `https://<host>.${LOCAL_DOMAIN}` (required) |
-| `homarr.dev/icon` | dashboard-icons slug (`gatus`, `pi-hole`, …) or a full image URL |
+| `homarr.dev/icon` | dashboard-icons slug (`homarr`, `pi-hole`, …) or a full image URL |
 | `homarr.dev/description` | app description (optional) |
-| `homarr.dev/ping-url` | in-cluster URL for the tile's status dot (copied from the gatus endpoint) |
+| `homarr.dev/ping-url` | in-cluster URL for the tile's status dot (same endpoint the health check used) |
 | `homarr.dev/category` | container that files the tile: `Homelab Components` or `Homelab Apps` |
 
 Routes without `homarr.dev/enabled: "true"` are ignored — `hermes-gateway`, `ha-mcp` and
@@ -75,7 +75,7 @@ editor.
 ## Files
 
 - `helmrelease.yaml` — the dashboard itself (SQLite on a 1Gi PVC, read-only Kubernetes cluster view)
-- `httproute.yaml` — exposed on `traefik-gateway`, with gatus health check and the `homarr.dev/*` annotations
+- `httproute.yaml` — exposed on `traefik-gateway`, with the `homarr.dev/*` annotations
 - `sync-rbac.yaml` / `sync-configmap.yaml` / `sync-cronjob.yaml` — the tile sync (see above)
 
 The first user and the API key are one-time manual steps (below) — Homarr offers no env var or API for

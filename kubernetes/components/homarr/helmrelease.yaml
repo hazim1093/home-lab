@@ -53,7 +53,7 @@ spec:
       ports:
         app:
           port: 7575
-    # HTTPRoute is defined in this directory so it carries the gatus annotations.
+    # HTTPRoute is defined in this directory so it carries the homarr.dev annotations.
     httproute:
       enabled: false
     resources:

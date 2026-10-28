@@ -4,12 +4,6 @@ metadata:
   name: hermes-dashboard
   namespace: hermes
   annotations:
-    gatus.home-operations.com/enabled: "true"
-    gatus.home-operations.com/endpoint: |
-      url: "http://hermes-dashboard.hermes.svc.cluster.local:9119"
-      interval: 60s
-      conditions:
-        - "[STATUS] == 200"
     homarr.dev/enabled: "true"
     homarr.dev/category: "Homelab Apps"
     homarr.dev/name: "Hermes"
@@ -38,14 +32,6 @@ kind: HTTPRoute
 metadata:
   name: hermes-gateway
   namespace: hermes
-  annotations:
-    gatus.home-operations.com/enabled: "true"
-    # /health is unauthenticated; / requires API_SERVER_KEY, so Gatus checks /health.
-    gatus.home-operations.com/endpoint: |
-      url: "http://hermes-gateway.hermes.svc.cluster.local:8642/health"
-      interval: 60s
-      conditions:
-        - "[STATUS] == 200"
 spec:
   parentRefs:
   - name: traefik-gateway

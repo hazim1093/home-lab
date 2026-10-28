@@ -4,12 +4,6 @@ metadata:
   name: homarr
   namespace: homarr
   annotations:
-    gatus.home-operations.com/enabled: "true"
-    gatus.home-operations.com/endpoint: |
-      url: "http://homarr.homarr.svc.cluster.local:7575/api/health/ready"
-      interval: 60s
-      conditions:
-        - "[STATUS] == 200"
     homarr.dev/enabled: "true"
     homarr.dev/category: "Homelab Components"
     homarr.dev/name: "Homarr"

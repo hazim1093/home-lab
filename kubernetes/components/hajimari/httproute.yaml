@@ -4,12 +4,6 @@ metadata:
   name: hajimari
   namespace: hajimari
   annotations:
-    gatus.home-operations.com/enabled: "true"
-    gatus.home-operations.com/endpoint: |
-      url: "http://hajimari.hajimari.svc.cluster.local:3000"
-      interval: 60s
-      conditions:
-        - "[STATUS] == 200"
     homarr.dev/enabled: "true"
     homarr.dev/category: "Homelab Components"
     homarr.dev/name: "Hajimari"

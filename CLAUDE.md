@@ -70,7 +70,6 @@ home-lab/
 │       ├── pihole/                  # DNS filtering
 │       ├── home-assistant/          # Home automation
 │       ├── rustdesk/                # Remote desktop
-│       ├── gatus/                   # Health monitoring
 │       ├── hajimari/                # Hajimari dashboard (static app list)
 │       ├── homarr/                  # Homarr dashboard (board tiles: editor/API, homarr.dev/* annotations)
 │       ├── external-dns/            # Automatic DNS management
@@ -482,7 +481,7 @@ spec:
 
 **Use Case**: Web applications that need to be accessible via browser
 
-**Example**: PiHole, Home Assistant, Gatus
+**Example**: PiHole, Home Assistant, Homarr
 
 **Configuration**:
 
@@ -493,14 +492,6 @@ kind: HTTPRoute
 metadata:
   name: my-app
   namespace: my-app
-  annotations:
-    # Optional: Enable Gatus health monitoring
-    gatus.home-operations.com/enabled: "true"
-    gatus.home-operations.com/endpoint: |
-      url: "http://my-app.my-app.svc.cluster.local:8080"
-      interval: 60s
-      conditions:
-        - "[STATUS] == 200"
 spec:
   parentRefs:
   - name: traefik-gateway      # Reference to Traefik Gateway
@@ -742,7 +733,6 @@ customDnsEntries:
   - address=/homeassistant.lab/192.168.0.200
   - address=/pihole.lab/192.168.0.200
   - address=/rustdesk.lab/192.168.0.203
-  - address=/gatus.lab/192.168.0.200
   - address=/mqtt.lab/192.168.0.202
 ```
 
@@ -865,7 +855,7 @@ To avoid browser warnings:
 
 **Use Case**: App needs to read/write Kubernetes resources
 
-**Example**: Gatus (reads HTTPRoutes), External-DNS (reads HTTPRoutes, writes to PiHole)
+**Example**: External-DNS (reads HTTPRoutes, writes to PiHole)
 
 **Files**:
 
@@ -982,7 +972,7 @@ spec:
 
 **Use Case**: Additional utility running alongside main app
 
-**Example**: Gatus sidecar for HTTPRoute discovery
+**Example**: A config-watcher container alongside the main app
 
 **Configuration**:
 ```yaml
@@ -1054,29 +1044,6 @@ spec:
 ```
 
 Flux will wait for dependencies to be ready before deploying.
-
-### Pattern: Health Checks with Gatus
-
-**Use Case**: Monitor service availability
-
-**Configuration**:
-
-In `httproute.yaml`:
-```yaml
-metadata:
-  annotations:
-    gatus.home-operations.com/enabled: "true"
-    gatus.home-operations.com/endpoint: |
-      url: "http://my-app.my-app.svc.cluster.local:8080/health"
-      interval: 60s
-      conditions:
-        - "[STATUS] == 200"
-        - "[RESPONSE_TIME] < 500"
-```
-
-View at: `https://gatus.lab`
-
----
 
 ## Troubleshooting Commands
 
