@@ -17,7 +17,6 @@ resources:
 - pihole.yaml
 - rustdesk.yaml
 - renovate.yaml
-- gatus.yaml
 - keda.yaml
 - keda-http.yaml
 - mosquitto.yaml

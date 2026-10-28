@@ -29,10 +29,6 @@ spec:
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: traefik
-    # Gatus health-checks hermes-gateway/hermes-dashboard directly
-    - namespaceSelector:
-        matchLabels:
-          kubernetes.io/metadata.name: gatus
   egress:
   # Allow DNS (needed to resolve model provider hostnames)
   - to:

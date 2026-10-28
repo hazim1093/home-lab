@@ -4,12 +4,6 @@ metadata:
   name: home-assistant
   namespace: home-assistant
   annotations:
-    gatus.home-operations.com/enabled: "true"
-    gatus.home-operations.com/endpoint: |
-      url: "http://home-assistant.home-assistant.svc.cluster.local:8123"
-      interval: 60s
-      conditions:
-        - "[STATUS] == 200"
     homarr.dev/enabled: "true"
     homarr.dev/category: "Homelab Apps"
     homarr.dev/name: "Home Assistant"

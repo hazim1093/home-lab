@@ -4,12 +4,6 @@ metadata:
   name: hermes-workspace
   namespace: hermes-workspace
   annotations:
-    gatus.home-operations.com/enabled: "true"
-    gatus.home-operations.com/endpoint: |
-      url: "http://hermes-workspace.hermes-workspace.svc.cluster.local:3000"
-      interval: 60s
-      conditions:
-        - "[STATUS] == 200 || [STATUS] == 302"
     homarr.dev/enabled: "true"
     homarr.dev/category: "Homelab Apps"
     homarr.dev/name: "Hermes Workspace"

@@ -30,8 +30,8 @@ secret.yaml               # SOPS: PAPERLESS_SECRET_KEY, PAPERLESS_ADMIN_USER, PA
 redis.yaml                # Deployment + Service "paperless-redis" (valkey, pinned tag, no PVC)
 deployment.yaml           # paperless webserver
 service.yaml              # "paperless" :8000
-httproute.yaml            # paperless.${LOCAL_DOMAIN}, websecure, gatus + homarr annotations
-networkpolicy.yaml        # ingress limited to: same ns, traefik, gatus, homarr
+httproute.yaml            # paperless.${LOCAL_DOMAIN}, websecure, homarr annotations
+networkpolicy.yaml        # ingress limited to: same ns, traefik, homarr
 backup-secret.yaml        # SOPS: RESTIC_REPOSITORY, RESTIC_PASSWORD, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 backup-cronjob.yaml       # nightly export + restic
 README.md                 # operations and restore runbook
@@ -65,7 +65,6 @@ Then add `- paperless` to `kubernetes/apps/kustomization.yaml`.
 - `enableServiceLinks: false`. Otherwise the `PAPERLESS_*` env vars Kubernetes injects for a Service named `paperless` collide with Paperless's own config variables. Same issue hermes hit.
 
 **httproute.yaml**: copy hermes's structure:
-- gatus: `url: http://paperless.paperless.svc.cluster.local:8000`, `[STATUS] == 200`
 - homarr: `enabled`, `category: "Homelab Apps"`, `name: "Paperless"`, `url: https://paperless.${LOCAL_DOMAIN}`, `icon: "paperless-ngx"`, `ping-url` pointing at the in-cluster service.
 
 **backup-cronjob.yaml** (`paperless-backup`)

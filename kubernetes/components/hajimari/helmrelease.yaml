@@ -71,9 +71,6 @@ spec:
               icon: mdi:home-assistant
         - group: Infrastructure
           apps:
-            - name: Gatus
-              url: "https://gatus.${LOCAL_DOMAIN}"
-              icon: mdi:heart-pulse
             - name: Pi-hole
               url: "https://pihole.${LOCAL_DOMAIN}"
               icon: mdi:pi-hole
