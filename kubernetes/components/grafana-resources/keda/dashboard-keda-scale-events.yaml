@@ -1,0 +1,722 @@
+# Scale up/down history for KEDA workloads, built on the kube-state-metrics
+# keda-hpa-* series (the KEDA operator's own metrics are not scraped).
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: keda-scale-events
+  namespace: grafana-operator
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana-cloud
+  folder: Kubernetes
+  json: |
+      {
+        "title": "KEDA Scale Events",
+        "uid": "keda-scale-events",
+        "tags": [
+          "keda",
+          "kubernetes",
+          "autoscaling"
+        ],
+        "timezone": "browser",
+        "editable": true,
+        "schemaVersion": 39,
+        "version": 1,
+        "refresh": "1m",
+        "time": {
+          "from": "now-24h",
+          "to": "now"
+        },
+        "templating": {
+          "list": [
+            {
+              "name": "namespace",
+              "label": "Namespace",
+              "type": "query",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "grafanacloud-prom"
+              },
+              "definition": "label_values(kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler=~\"keda-hpa-.+\"}, namespace)",
+              "query": {
+                "query": "label_values(kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler=~\"keda-hpa-.+\"}, namespace)",
+                "refId": "StandardVariableQuery"
+              },
+              "includeAll": true,
+              "allValue": ".*",
+              "multi": true,
+              "refresh": 2,
+              "sort": 1,
+              "current": {
+                "selected": true,
+                "text": [
+                  "All"
+                ],
+                "value": [
+                  "$__all"
+                ]
+              },
+              "options": []
+            },
+            {
+              "name": "workload",
+              "label": "Workload",
+              "type": "query",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "grafanacloud-prom"
+              },
+              "definition": "label_values(kube_horizontalpodautoscaler_status_current_replicas{namespace=~\"$namespace\",horizontalpodautoscaler=~\"keda-hpa-.+\"}, horizontalpodautoscaler)",
+              "query": {
+                "query": "label_values(kube_horizontalpodautoscaler_status_current_replicas{namespace=~\"$namespace\",horizontalpodautoscaler=~\"keda-hpa-.+\"}, horizontalpodautoscaler)",
+                "refId": "StandardVariableQuery"
+              },
+              "includeAll": true,
+              "allValue": ".*",
+              "multi": true,
+              "refresh": 2,
+              "sort": 1,
+              "current": {
+                "selected": true,
+                "text": [
+                  "All"
+                ],
+                "value": [
+                  "$__all"
+                ]
+              },
+              "options": []
+            }
+          ]
+        },
+        "panels": [
+          {
+            "id": 1,
+            "type": "row",
+            "title": "Scale events",
+            "collapsed": false,
+            "gridPos": {
+              "h": 1,
+              "w": 24,
+              "x": 0,
+              "y": 0
+            },
+            "panels": []
+          },
+          {
+            "id": 2,
+            "type": "state-timeline",
+            "title": "Replica changes (scaled up / down)",
+            "description": "delta() of the KEDA-managed HPA replica count, one row per workload. Red = a scale-up happened in that interval, green = scale-down, grey-green = idle.",
+            "gridPos": {
+              "h": 9,
+              "w": 24,
+              "x": 0,
+              "y": 1
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "targets": [
+              {
+                "refId": "A",
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "grafanacloud-prom"
+                },
+                "expr": "delta(kube_horizontalpodautoscaler_status_current_replicas{namespace=~\"$namespace\",horizontalpodautoscaler=~\"$workload\"}[1m])",
+                "range": true,
+                "instant": false,
+                "editorMode": "code",
+                "format": "time_series",
+                "legendFormat": "{{namespace}} / {{horizontalpodautoscaler}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "continuous-GrYlRd"
+                },
+                "custom": {
+                  "fillOpacity": 70,
+                  "lineWidth": 0,
+                  "spanNulls": false
+                },
+                "mappings": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "index": 0,
+                        "text": "No scaling",
+                        "color": "green"
+                      }
+                    }
+                  },
+                  {
+                    "type": "range",
+                    "options": {
+                      "from": -200,
+                      "to": -0.001,
+                      "result": {
+                        "index": 1,
+                        "text": "Scaling down",
+                        "color": "semi-dark-green"
+                      }
+                    }
+                  },
+                  {
+                    "type": "range",
+                    "options": {
+                      "from": 0.001,
+                      "to": 200,
+                      "result": {
+                        "index": 2,
+                        "text": "Scaling up",
+                        "color": "semi-dark-red"
+                      }
+                    }
+                  }
+                ],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                },
+                "unit": "none"
+              },
+              "overrides": []
+            },
+            "options": {
+              "alignValue": "left",
+              "mergeValues": true,
+              "rowHeight": 1,
+              "showValue": "never",
+              "legend": {
+                "displayMode": "list",
+                "placement": "bottom",
+                "showLegend": true,
+                "calcs": [],
+                "width": 0
+              },
+              "tooltip": {
+                "mode": "single",
+                "sort": "none"
+              }
+            }
+          },
+          {
+            "id": 3,
+            "type": "timeseries",
+            "title": "Replicas per workload",
+            "description": "Current replica count of each KEDA target (0 = scaled to zero).",
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 10
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "targets": [
+              {
+                "refId": "A",
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "grafanacloud-prom"
+                },
+                "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=~\"$namespace\",horizontalpodautoscaler=~\"$workload\"}",
+                "range": true,
+                "instant": false,
+                "editorMode": "code",
+                "format": "time_series",
+                "legendFormat": "{{namespace}} / {{horizontalpodautoscaler}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "stepAfter",
+                  "lineWidth": 2,
+                  "fillOpacity": 0,
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "axisPlacement": "auto",
+                  "axisSoftMin": 0,
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                },
+                "unit": "short",
+                "decimals": 0
+              },
+              "overrides": []
+            },
+            "options": {
+              "legend": {
+                "displayMode": "list",
+                "placement": "bottom",
+                "showLegend": true,
+                "calcs": []
+              },
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              }
+            }
+          },
+          {
+            "id": 4,
+            "type": "table",
+            "title": "Scale activity in range",
+            "description": "Pods added / removed per KEDA workload over the selected time range, from replica-count deltas.",
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 10
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "targets": [
+              {
+                "refId": "A",
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "grafanacloud-prom"
+                },
+                "expr": "sum by (namespace, horizontalpodautoscaler) (sum_over_time((delta(kube_horizontalpodautoscaler_status_current_replicas{namespace=~\"$namespace\",horizontalpodautoscaler=~\"$workload\"}[2m]) > 0)[$__range:2m]))",
+                "range": false,
+                "instant": true,
+                "editorMode": "code",
+                "format": "table"
+              },
+              {
+                "refId": "B",
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "grafanacloud-prom"
+                },
+                "expr": "-1 * sum by (namespace, horizontalpodautoscaler) (sum_over_time((delta(kube_horizontalpodautoscaler_status_current_replicas{namespace=~\"$namespace\",horizontalpodautoscaler=~\"$workload\"}[2m]) < 0)[$__range:2m]))",
+                "range": false,
+                "instant": true,
+                "editorMode": "code",
+                "format": "table"
+              },
+              {
+                "refId": "C",
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "grafanacloud-prom"
+                },
+                "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=~\"$namespace\",horizontalpodautoscaler=~\"$workload\"}",
+                "range": false,
+                "instant": true,
+                "editorMode": "code",
+                "format": "table"
+              },
+              {
+                "refId": "D",
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "grafanacloud-prom"
+                },
+                "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=~\"$namespace\",horizontalpodautoscaler=~\"$workload\"}",
+                "range": false,
+                "instant": true,
+                "editorMode": "code",
+                "format": "table"
+              }
+            ],
+            "transformations": [
+              {
+                "id": "merge",
+                "options": {}
+              },
+              {
+                "id": "organize",
+                "options": {
+                  "excludeByName": {
+                    "Time": true
+                  },
+                  "renameByName": {
+                    "namespace": "Namespace",
+                    "horizontalpodautoscaler": "Workload",
+                    "Value #A": "Pods added",
+                    "Value #B": "Pods removed",
+                    "Value #C": "Replicas now",
+                    "Value #D": "Max"
+                  }
+                }
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "align": "auto",
+                  "cellOptions": {
+                    "type": "auto"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                },
+                "unit": "short",
+                "decimals": 0
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Pods added"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.cellOptions",
+                      "value": {
+                        "type": "color-background",
+                        "mode": "basic"
+                      }
+                    },
+                    {
+                      "id": "color",
+                      "value": {
+                        "mode": "fixed",
+                        "fixedColor": "semi-dark-red"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Pods removed"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.cellOptions",
+                      "value": {
+                        "type": "color-background",
+                        "mode": "basic"
+                      }
+                    },
+                    {
+                      "id": "color",
+                      "value": {
+                        "mode": "fixed",
+                        "fixedColor": "semi-dark-green"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "displayName": "Pods added",
+                  "desc": true
+                }
+              ],
+              "footer": {
+                "show": false,
+                "reducer": [
+                  "sum"
+                ],
+                "countRows": false,
+                "fields": ""
+              }
+            }
+          },
+          {
+            "id": 5,
+            "type": "stat",
+            "title": "Pods running now",
+            "description": "Replicas across all selected KEDA targets right now.",
+            "gridPos": {
+              "h": 4,
+              "w": 6,
+              "x": 0,
+              "y": 18
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "targets": [
+              {
+                "refId": "A",
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "grafanacloud-prom"
+                },
+                "expr": "sum(kube_horizontalpodautoscaler_status_current_replicas{namespace=~\"$namespace\",horizontalpodautoscaler=~\"$workload\"})",
+                "range": false,
+                "instant": true,
+                "editorMode": "code",
+                "format": "time_series"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                },
+                "unit": "short",
+                "decimals": 0
+              },
+              "overrides": []
+            },
+            "options": {
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "",
+                "values": false
+              },
+              "colorMode": "value",
+              "graphMode": "none",
+              "textMode": "auto",
+              "justifyMode": "auto",
+              "orientation": "auto"
+            }
+          },
+          {
+            "id": 6,
+            "type": "stat",
+            "title": "Workloads at zero now",
+            "description": "KEDA targets currently scaled to zero.",
+            "gridPos": {
+              "h": 4,
+              "w": 6,
+              "x": 6,
+              "y": 18
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "targets": [
+              {
+                "refId": "A",
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "grafanacloud-prom"
+                },
+                "expr": "count(kube_horizontalpodautoscaler_status_current_replicas{namespace=~\"$namespace\",horizontalpodautoscaler=~\"$workload\"} == 0)",
+                "range": false,
+                "instant": true,
+                "editorMode": "code",
+                "format": "time_series"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                },
+                "unit": "short",
+                "decimals": 0
+              },
+              "overrides": []
+            },
+            "options": {
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "",
+                "values": false
+              },
+              "colorMode": "value",
+              "graphMode": "none",
+              "textMode": "auto",
+              "justifyMode": "auto",
+              "orientation": "auto"
+            }
+          },
+          {
+            "id": 7,
+            "type": "stat",
+            "title": "Pods added",
+            "description": "Replica increases over the selected range.",
+            "gridPos": {
+              "h": 4,
+              "w": 6,
+              "x": 12,
+              "y": 18
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "targets": [
+              {
+                "refId": "A",
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "grafanacloud-prom"
+                },
+                "expr": "sum(sum by (namespace, horizontalpodautoscaler) (sum_over_time((delta(kube_horizontalpodautoscaler_status_current_replicas{namespace=~\"$namespace\",horizontalpodautoscaler=~\"$workload\"}[2m]) > 0)[$__range:2m])))",
+                "range": false,
+                "instant": true,
+                "editorMode": "code",
+                "format": "time_series"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                },
+                "unit": "short",
+                "decimals": 0
+              },
+              "overrides": []
+            },
+            "options": {
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "",
+                "values": false
+              },
+              "colorMode": "value",
+              "graphMode": "none",
+              "textMode": "auto",
+              "justifyMode": "auto",
+              "orientation": "auto"
+            }
+          },
+          {
+            "id": 8,
+            "type": "stat",
+            "title": "Pods removed",
+            "description": "Replica decreases over the selected range.",
+            "gridPos": {
+              "h": 4,
+              "w": 6,
+              "x": 18,
+              "y": 18
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "targets": [
+              {
+                "refId": "A",
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "grafanacloud-prom"
+                },
+                "expr": "sum(-1 * sum by (namespace, horizontalpodautoscaler) (sum_over_time((delta(kube_horizontalpodautoscaler_status_current_replicas{namespace=~\"$namespace\",horizontalpodautoscaler=~\"$workload\"}[2m]) < 0)[$__range:2m])))",
+                "range": false,
+                "instant": true,
+                "editorMode": "code",
+                "format": "time_series"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                },
+                "unit": "short",
+                "decimals": 0
+              },
+              "overrides": []
+            },
+            "options": {
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "",
+                "values": false
+              },
+              "colorMode": "value",
+              "graphMode": "none",
+              "textMode": "auto",
+              "justifyMode": "auto",
+              "orientation": "auto"
+            }
+          }
+        ],
+        "annotations": {
+          "list": []
+        }
+      }
