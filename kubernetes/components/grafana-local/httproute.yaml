@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana-local
+  namespace: grafana-local
+spec:
+  parentRefs:
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: websecure
+  hostnames:
+  - "grafana.${LOCAL_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: grafana-local-service
+      port: 3000

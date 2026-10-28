@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: grafana-local-restrict-ingress
+  namespace: grafana-local
+spec:
+  podSelector:
+    matchLabels:
+      app: grafana-local
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    # Traefik proxies grafana.${LOCAL_DOMAIN}
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+    # The operator calls Grafana's API
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: grafana-operator
+    ports:
+    - protocol: TCP
+      port: 3000

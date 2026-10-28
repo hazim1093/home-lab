@@ -24,6 +24,7 @@ resources:
 - grafana-alloy.yaml
 - grafana-operator.yaml
 - grafana-resources.yaml
+- grafana-local.yaml
 - kube-state-metrics.yaml
 - node-exporter.yaml
 - prometheus-operator-crds.yaml

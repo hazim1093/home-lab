@@ -1,0 +1,30 @@
+apiVersion: grafana.integreatly.org/v1beta1
+kind: Grafana
+metadata:
+  name: grafana-local
+  namespace: grafana-local
+  labels:
+    dashboards: grafana-local
+spec:
+  config:
+    server:
+      root_url: "https://grafana.${LOCAL_DOMAIN}"
+    users:
+      allow_sign_up: "false"
+    auth.anonymous:
+      enabled: "false"
+    analytics:
+      reporting_enabled: "false"
+      check_for_updates: "false"
+  deployment:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: grafana
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                memory: 384Mi
