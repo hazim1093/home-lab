@@ -43,6 +43,9 @@ operator:
     enabled: true
 prometheus:
   enabled: true
+bpf:
+  # Chart default "all" also traces PSH,ACK / bare ACK; agent default is enough.
+  monitorFlags: "syn,fin,rst"
 hubble:
   enabled: true
   relay:
