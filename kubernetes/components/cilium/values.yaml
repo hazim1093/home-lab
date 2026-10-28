@@ -55,5 +55,7 @@ hubble:
     enabled:
       - dns:query;ignoreAAAA
       - drop
+      # - tcp
+      # - flow
       - icmp
       - http
