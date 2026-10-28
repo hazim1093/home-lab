@@ -21,3 +21,54 @@ spec:
         cpu: 25m
       limits:
         memory: 64Mi
+
+    prometheus:
+      monitor:
+        enabled: true
+        interval: 60s
+        # Narrow allowlist: basic node health (CPU, load, RAM, disk/net), identity metrics
+        # for the dotdc $job/$instance variables, thermals and PSI. Disk, filesystem and
+        # network series are limited to real devices.
+        metricRelabelings:
+          - sourceLabels: ["__name__"]
+            regex: "up|scrape_samples_scraped|node_uname_info|node_boot_time_seconds|node_cpu_seconds_total|node_load1|node_load5|node_load15|node_memory_MemTotal_bytes|node_memory_MemAvailable_bytes|node_memory_SwapTotal_bytes|node_memory_SwapFree_bytes|node_filesystem_avail_bytes|node_filesystem_size_bytes|node_disk_read_bytes_total|node_disk_written_bytes_total|node_network_receive_bytes_total|node_network_transmit_bytes_total|node_network_receive_drop_total|node_network_transmit_drop_total|node_network_receive_errs_total|node_network_transmit_errs_total|node_hwmon_temp_celsius|node_hwmon_chip_names|node_hwmon_fan_rpm|node_thermal_zone_temp|node_cooling_device_cur_state|node_cooling_device_max_state|node_pressure_cpu_waiting_seconds_total|node_pressure_io_waiting_seconds_total|node_pressure_io_stalled_seconds_total|node_pressure_memory_waiting_seconds_total|node_pressure_memory_stalled_seconds_total"
+            action: "keep"
+          - sourceLabels: ["__name__", "device"]
+            separator: "@"
+            regex: "node_disk_.*@(mmcblk.p.+|nvme.+|rbd.+|sd.+|vd.+|xvd.+|dasd.+)"
+            targetLabel: "__keepme"
+            replacement: "1"
+          - sourceLabels: ["__name__", "__keepme"]
+            separator: "@"
+            regex: "node_disk_.*@"
+            action: "drop"
+          - sourceLabels: ["__name__"]
+            regex: "node_disk_.*"
+            targetLabel: "__keepme"
+            replacement: ""
+          - sourceLabels: ["__name__", "fstype"]
+            separator: "@"
+            regex: "node_filesystem_.*@(ext[234]|xfs|btrfs|zfs|vfat|ntfs)"
+            targetLabel: "__keepme"
+            replacement: "1"
+          - sourceLabels: ["__name__", "__keepme"]
+            separator: "@"
+            regex: "node_filesystem_.*@"
+            action: "drop"
+          - sourceLabels: ["__name__"]
+            regex: "node_filesystem_.*"
+            targetLabel: "__keepme"
+            replacement: ""
+          - sourceLabels: ["__name__", "device"]
+            separator: "@"
+            regex: "node_network_.*@(en[ospx][0-9].*|wlan[0-9].*|eth[0-9].*)"
+            targetLabel: "__keepme"
+            replacement: "1"
+          - sourceLabels: ["__name__", "__keepme"]
+            separator: "@"
+            regex: "node_network_.*@"
+            action: "drop"
+          - sourceLabels: ["__name__"]
+            regex: "node_network_.*"
+            targetLabel: "__keepme"
+            replacement: ""

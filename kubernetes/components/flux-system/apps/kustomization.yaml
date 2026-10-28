@@ -26,6 +26,7 @@ resources:
 - grafana-resources.yaml
 - kube-state-metrics.yaml
 - node-exporter.yaml
+- prometheus-operator-crds.yaml
 - hajimari.yaml
 - homarr.yaml
 - private-apps.yaml

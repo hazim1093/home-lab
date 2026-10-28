@@ -4,4 +4,5 @@ resources:
   - namespace.yaml
   - secret.yaml
   - helmrelease.yaml
+  - servicemonitor.yaml
   - ingress.yaml
