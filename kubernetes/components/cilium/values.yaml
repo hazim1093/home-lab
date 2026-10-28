@@ -49,11 +49,11 @@ hubble:
     enabled: true
   ui:
     enabled: false
+  # tcp/flow are per-flow counters: they add agent CPU and cardinality, and
+  # nothing scrapes :9965 yet. dns/drop/icmp/http stay cheap and diagnostic.
   metrics:
     enabled:
       - dns:query;ignoreAAAA
       - drop
-      - tcp
-      - flow
       - icmp
       - http
