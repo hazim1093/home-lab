@@ -28,3 +28,16 @@ spec:
   - kind: ConfigMap
     name: cilium-values
     valuesKey: values.yaml
+  # The agent reads cilium-config from the API (init container + cilium-dbg
+  # build-config), so no reference exists for reloader to scan. See values.yaml.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: DaemonSet
+              name: cilium
+              namespace: kube-system
+            patch: |-
+              - op: add
+                path: /metadata/annotations/reloader.stakater.com~1auto
+                value: "true"

@@ -46,6 +46,16 @@ prometheus:
 bpf:
   # Space-separated: Viper parses this with strings.Fields, commas are one token.
   monitorFlags: "syn fin rst"
+# Reloader rolls the agent when cilium-config changes, but it only watches
+# ConfigMaps the pod spec references - so mount it. Nothing reads this path.
+extraVolumes:
+  - name: cilium-config-ref
+    configMap:
+      name: cilium-config
+extraVolumeMounts:
+  - name: cilium-config-ref
+    mountPath: /tmp/cilium-config-ref
+    readOnly: true
 hubble:
   enabled: true
   relay:
