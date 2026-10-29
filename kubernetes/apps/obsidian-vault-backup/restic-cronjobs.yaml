@@ -14,7 +14,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: restic
-              image: restic/restic:0.17.3
+              image: restic/restic:0.19.1
               args: ["backup", "/vault", "--tag", "obsidian"]
               envFrom:
                 - secretRef:
@@ -44,7 +44,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: restic
-              image: restic/restic:0.17.3
+              image: restic/restic:0.19.1
               args:
                 - forget
                 - --keep-daily=7
@@ -71,7 +71,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: restic
-              image: restic/restic:0.17.3
+              image: restic/restic:0.19.1
               args: ["check", "--read-data-subset=5%"]
               envFrom:
                 - secretRef:
