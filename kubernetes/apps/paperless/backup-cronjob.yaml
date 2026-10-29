@@ -21,7 +21,7 @@ spec:
           # Only `args` is set (not `command`), so the image's s6 ENTRYPOINT
           # runs this as a one-shot command instead of starting the full app.
           - name: export
-            image: ghcr.io/paperless-ngx/paperless-ngx:3.2.1
+            image: ghcr.io/paperless-ngx/paperless-ngx:3.3.4
             args:
             - "document_exporter"
             - "/usr/src/paperless/export"

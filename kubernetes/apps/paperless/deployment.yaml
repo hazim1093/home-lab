@@ -45,7 +45,7 @@ spec:
       # Fails loudly if the image's tessdata path ever moves, instead of
       # silently OCR-ing English-only.
       - name: verify-tessdata-path
-        image: ghcr.io/paperless-ngx/paperless-ngx:3.2.1
+        image: ghcr.io/paperless-ngx/paperless-ngx:3.3.4
         command: ["sh", "-c"]
         args:
         - |
@@ -57,7 +57,7 @@ spec:
           fi
       containers:
       - name: paperless
-        image: ghcr.io/paperless-ngx/paperless-ngx:3.2.1
+        image: ghcr.io/paperless-ngx/paperless-ngx:3.3.4
         imagePullPolicy: IfNotPresent
         envFrom:
         - configMapRef:
