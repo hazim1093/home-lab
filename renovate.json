@@ -6,9 +6,6 @@
   "kubernetes": {
     "managerFilePatterns": [
       "/^kubernetes\\/.+\\.ya?ml$/"
-    ],
-    "ignorePaths": [
-      "kubernetes/components/flux-system/**"
     ]
   },
   "flux": {
@@ -41,13 +38,6 @@
     }
   ],
   "packageRules": [
-    {
-      "description": "flux-system is managed by Terraform; parse only, never update",
-      "matchFileNames": [
-        "kubernetes/components/flux-system/**"
-      ],
-      "enabled": false
-    },
     {
       "description": "Minor and patch updates grouped per dependency",
       "matchUpdateTypes": [
