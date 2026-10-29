@@ -18,4 +18,4 @@ resources:
   - httproute.yaml
 images:
   - name: docker.io/nousresearch/hermes-agent
-    newTag: v0.22.2
+    newTag: v0.22.5
