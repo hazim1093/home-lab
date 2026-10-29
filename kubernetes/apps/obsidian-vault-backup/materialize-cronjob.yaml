@@ -14,7 +14,7 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: livesync-cli
-            image: ghcr.io/vrtmrz/livesync-cli:1.0.32-cli
+            image: ghcr.io/vrtmrz/livesync-cli:1.0.42-cli
             # mirror = one sync cycle between local db and vault dir, then exit.
             args: ["/data", "--vault", "/vault", "mirror"]
             volumeMounts:
