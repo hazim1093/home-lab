@@ -3,39 +3,20 @@
   "extends": [
     "config:recommended"
   ],
-  "schedule": [
-    "before 6am on monday"
-  ],
-  "terraform": {
-    "managerFilePatterns": ["/^kubernetes\\/bootstrap\\/flux\\/.+\\.tf$/"]
-  },
   "kubernetes": {
     "managerFilePatterns": [
-      "/^kubernetes\\/components\\/.+\\.yaml$/",
-      "/^kubernetes\\/apps\\/paperless\\/.+\\.yaml$/",
-      "/^kubernetes\\/apps\\/hermes\\/.+\\.yaml$/"
+      "/^kubernetes\\/.+\\.ya?ml$/"
     ],
     "ignorePaths": [
       "kubernetes/components/flux-system/**"
     ]
   },
   "flux": {
-    "managerFilePatterns": ["/^kubernetes\\/components\\/.+\\.yaml$/"]
-  },
-  "helm-values": {
-    "managerFilePatterns": ["/^kubernetes\\/components\\/.+\\.yaml$/"],
-    "ignorePaths": [
-      "kubernetes/components/flux-system/**"
+    "managerFilePatterns": [
+      "/^kubernetes\\/(components|apps)\\/.+\\.ya?ml$/"
     ]
   },
   "customManagers": [
-    {
-      "customType": "regex",
-      "managerFilePatterns": ["/^kubernetes\\/components\\/.+\\.yaml$/"],
-      "matchStrings": [
-        "version:\\s+\"(?<currentValue>.+?)\"\\s+# renovate: datasource=(?<datasource>.+?) depName=(?<depName>.+?)(?: versioning=(?<versioning>.+?))?\\s"
-      ]
-    },
     {
       "customType": "regex",
       "managerFilePatterns": [
@@ -61,86 +42,37 @@
   ],
   "packageRules": [
     {
-      "description": "Ignore flux-system components - managed by Terraform",
+      "description": "flux-system is managed by Terraform; parse only, never update",
       "matchFileNames": [
         "kubernetes/components/flux-system/**"
       ],
       "enabled": false
     },
     {
-      "description": "Enable Terraform updates for Flux bootstrap",
-      "matchManagers": [
-        "terraform"
+      "description": "Minor and patch updates grouped per dependency",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
       ],
-      "matchFileNames": [
-        "kubernetes/bootstrap/flux/**"
-      ],
-      "enabled": true
-    },
-    {
-      "description": "Enable Docker updates in components (excluding flux-system)",
-      "matchCategories": [
-        "docker"
-      ],
-      "enabled": true
-    },
-    {
-      "description": "Separate PRs for each Helm release - minor and patch grouped",
-      "matchDatasources": [
-        "helm"
-      ],
-      "separateMajorMinor": true,
-      "separateMinorPatch": false,
       "groupName": "{{depName}}",
-      "groupSlug": "helm-{{depName}}",
-      "commitMessageTopic": "{{depName}} Helm release"
+      "groupSlug": "{{depName}}"
     },
     {
-      "description": "Separate PRs for Helm major version updates",
-      "matchDatasources": [
-        "helm"
-      ],
+      "description": "Major updates get their own PR",
       "matchUpdateTypes": [
         "major"
       ],
       "groupName": "{{depName}} (major)",
-      "groupSlug": "helm-{{depName}}-major",
-      "commitMessageTopic": "{{depName}} Helm release"
+      "groupSlug": "{{depName}}-major"
     },
     {
-      "description": "Hermes image uses SemVer tags since v0.21.6; the older CalVer tags (v2026.*) would sort as newer. Relax at 1.0.",
-      "matchDatasources": [
-        "docker"
-      ],
+      "description": "Hermes image uses SemVer tags since v0.21.6; older CalVer tags (v2026.*) sort newer",
       "matchPackageNames": [
         "nousresearch/hermes-agent",
         "/^docker\\.io\\/nousresearch\\/hermes-agent$/"
       ],
       "versioning": "semver",
       "allowedVersions": "/^v?0\\./"
-    },
-    {
-      "description": "Separate PRs for each container image - minor and patch grouped",
-      "matchDatasources": [
-        "docker"
-      ],
-      "separateMajorMinor": true,
-      "separateMinorPatch": false,
-      "groupName": "{{depName}}",
-      "groupSlug": "container-{{depName}}",
-      "commitMessageTopic": "{{depName}} container image"
-    },
-    {
-      "description": "Separate PRs for container major version updates",
-      "matchDatasources": [
-        "docker"
-      ],
-      "matchUpdateTypes": [
-        "major"
-      ],
-      "groupName": "{{depName}} (major)",
-      "groupSlug": "container-{{depName}}-major",
-      "commitMessageTopic": "{{depName}} container image"
     }
   ]
 }
