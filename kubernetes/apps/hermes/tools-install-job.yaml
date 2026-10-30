@@ -6,7 +6,6 @@ metadata:
   namespace: hermes
 spec:
   backoffLimit: 5
-  ttlSecondsAfterFinished: 3600
   template:
     metadata:
       labels:

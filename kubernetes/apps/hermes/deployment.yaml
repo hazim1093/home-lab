@@ -98,13 +98,13 @@ spec:
         - |
           set -eu
           BIN_DIR=/opt/data/.local/bin
-          for i in $(seq 1 60); do
+          for i in $(seq 1 240); do
             if [ -x "$BIN_DIR/kubectl" ] && [ -x "$BIN_DIR/jq" ] && [ -x "$BIN_DIR/gh" ] \
               && [ -x "$BIN_DIR/gcloud" ] && [ -x "$BIN_DIR/tofu" ]; then
               echo "tools present"
               exit 0
             fi
-            echo "waiting for hermes-tools-install job to finish ($i/60)..."
+            echo "waiting for hermes-tools-install job to finish ($i/240)..."
             sleep 5
           done
           echo "timed out waiting for tools — check: kubectl -n hermes get jobs,pods -l app=hermes-tools-install" >&2
