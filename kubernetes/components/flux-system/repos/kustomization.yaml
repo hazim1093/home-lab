@@ -20,3 +20,4 @@ resources:
 - home-lab-private.yaml
 - tailscale.yaml
 - couchdb.yaml
+- cloudflare.yaml
