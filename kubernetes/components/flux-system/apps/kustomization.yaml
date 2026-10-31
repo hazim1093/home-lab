@@ -38,3 +38,4 @@ resources:
 - hermes.yaml
 - hermes-workspace.yaml
 - paperless.yaml
+- cloudflared.yaml

@@ -7,6 +7,13 @@ creation_rules:
   age:
   - age1s84t0ws8cpp8ujf8mny373gg63g9d52fezrdwe24jdfe4d309pwqvawpcu
 
+# Tunnel credentials attach a connector to the tunnel, so the hermes-agent key is
+# excluded here too. First matching rule wins, so this stays above the catch-all.
+- path_regex: kubernetes/components/cloudflared/.*\.yaml$
+  encrypted_regex: ^(data|stringData)$
+  age:
+  - age1s84t0ws8cpp8ujf8mny373gg63g9d52fezrdwe24jdfe4d309pwqvawpcu
+
 # Encrypt all YAML files containing Kubernetes Secrets
 - encrypted_regex: ^(data|stringData)$
   age:
