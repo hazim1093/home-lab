@@ -4,6 +4,8 @@ metadata:
   name: homarr-httproute-sync
   namespace: homarr
 spec:
+  # Disabled: every run dies on GET /api/apps with 401, so no tile has synced since the v2 upgrade.
+  suspend: true
   schedule: "*/10 * * * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 120
