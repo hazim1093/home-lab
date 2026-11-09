@@ -52,8 +52,9 @@ spec:
         type: threshold
         expression: B
         conditions:
+        # B is elapsed seconds, not a boolean - compare it to 36h, not to 0.
         - evaluator:
             type: gt
             params:
-            - 0
+            - 129600
         refId: C
