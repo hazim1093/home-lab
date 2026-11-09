@@ -20,7 +20,12 @@ spec:
       # Not cloudflare.secret: that renders credentials into these public values.
       secretName: cloudflared-credentials
       enableWarp: false
-      ingress: []
+      ingress:
+      - service: https://traefik.traefik.svc.cluster.local:443
+        originRequest:
+          # Edge TLS is Cloudflare's. This hop presents Traefik's default
+          # certificate, which is not issued for the public hostname.
+          noTLSVerify: true
     image:
       # Chart appVersion (2024.8.3) lags.
       tag: "2026.10.7"

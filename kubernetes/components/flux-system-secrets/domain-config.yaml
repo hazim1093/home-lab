@@ -7,10 +7,13 @@ type: Opaque
 # Base domain (e.g., "example.com")
 # Local subdomain (e.g., "local.example.com")
 # Email for Let's Encrypt ACME registration
+# Public HQ domain: Internet facing domain
 stringData:
     BASE_DOMAIN: ENC[AES256_GCM,data:vwI0+sAgQ5aDAaQ=,iv:6UgwuR9ufRaCevEa5jY/fKyj2rCkWCMpdsIjrhXfAKY=,tag:rxP1bgXaCj7OCiRXQ4yBKg==,type:str]
     LOCAL_DOMAIN: ENC[AES256_GCM,data:SXQR9M+2MvOatshvuGFJVy0=,iv:G7Cj2lhYkBuuG/LCi4L+Msi/JUYGXkYqYAH1OG7ahYc=,tag:7YJZW7lW52bj1jV3Gj1QGQ==,type:str]
     ACME_EMAIL: ENC[AES256_GCM,data:zu2vRVXynLl7yktPFYyghVX8fA==,iv:AOUxu3XQkVSTQPR79gEjEmH7lB4aqtelBoQE4eAMBTQ=,tag:Go0r2e0VdpoRPpyV0MGnnA==,type:str]
+    PUBLIC_HQ_DOMAIN: ENC[AES256_GCM,data:00lpDdayvUo9reFI,iv:3HoPjRXS72Sm/wl/voqEa1s79MujBDMHyiN/RFGDGq0=,tag:UT9ZpxPaSXKgZDUik968zg==,type:str]
+    CF_TUNNEL_TARGET: ENC[AES256_GCM,data:u7/IVLImjeIIqnOUVEmUYMAXqIfPtCmJKgz8zdeDZiGvlerx8yzxioJf+zC8zL29nOHhAMU=,iv:sk6aQ13PUY0+u1oUoPgDN9aCzIDbnwRT3TQlQs0pmho=,tag:/D/6ZCwIDwEumjQVwAD06A==,type:str]
 sops:
     age:
         - enc: |
@@ -32,6 +35,6 @@ sops:
             -----END AGE ENCRYPTED FILE-----
           recipient: age1470xftejp68uy54dn9vxwhnyuhgvpmf533nmn3mfya7uz558u3ls6v0r79
     encrypted_regex: ^(data|stringData)$
-    lastmodified: "2026-01-10T01:09:47Z"
-    mac: ENC[AES256_GCM,data:umqgkD6CldUvrWvDW1f6UvcVcmtkfPaq1FAUOd2Tsw2DWpTKOJ38VV6Pzx7xP18DhT9pEuVDYAQPWabVIdTEQS9FUkWx4Guixryk2ADdgyRg11mW9rC/29KQQTctEmAiJvPWpoiDwTNugGblgzVULc6d7wMx1GoKiP5GurkJ4+M=,iv:2t4S588KjqjGeDwRAAjg3jh03CwLEURG1GGW2yxx/ek=,tag:8OvFm+E4m+zAUMPDJ9sPCQ==,type:str]
-    version: 3.11.0
+    lastmodified: "2026-11-01T03:26:43Z"
+    mac: ENC[AES256_GCM,data:r63axsfyV9gI/MFkPdaOHffH+91fL0IKBrQP0bxkW4F2ktOokgJUsoLtdOHCJZl6hhRvC5/Sa6yGkVQ62PDpQ+OqhBHjiu58M6Ie5zgHPsNQQTYYogskirFMMzsid5jHDaEkudvRT0vTgmZmcuTL2TJlh/8A6wsqll7E8dEDg6U=,iv:z2NcxXB1WMITKfXS1DQZ51lc1taLX9MSXuJS37Zi2VM=,tag:QYxV7UKLnTbm91Hr2DYDMw==,type:str]
+    version: 3.13.3

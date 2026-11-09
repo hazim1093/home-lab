@@ -20,11 +20,9 @@ Use `secretName`, never `values.cloudflare.secret` — the latter renders creden
 
 ## Expose a service
 
-Add to `values.cloudflare.ingress` in `helmrelease.yaml`:
+Ingress is a catch-all to Traefik, so this component doesn't change per service — give the app a public hostname instead:
 
-```yaml
-- hostname: pr-agent.${BASE_DOMAIN}
-  service: http://pr-agent.pr-agent.svc.cluster.local:3000
-```
+1. `hostnames: ["app.${PUBLIC_HQ_DOMAIN}"]` on its `HTTPRoute`; Traefik matches `Host`.
+2. `external-dns.alpha.kubernetes.io/hostname: "app.${PUBLIC_HQ_DOMAIN}"` and `external-dns.alpha.kubernetes.io/target: "${CF_TUNNEL_TARGET}"` on its `Service`; `external-dns-hq` creates the proxied CNAME to the tunnel.
 
-Then: the matching egress rule in `networkpolicy.yaml`; `cloudflared tunnel route dns home-lab <host>`; and a NetworkPolicy locking the app's ingress to the `cloudflared` namespace. Put interactive apps behind Cloudflare Access — the tunnel is a conduit, not auth.
+Interactive apps still want Cloudflare Access — the tunnel is a conduit, not auth.
