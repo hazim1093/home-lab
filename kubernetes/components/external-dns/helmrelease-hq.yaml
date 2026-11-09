@@ -1,0 +1,44 @@
+# Public HQ zone: proxied CNAMEs to the Cloudflare Tunnel, not the MetalLB VIP
+# the BASE_DOMAIN instance publishes.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-dns-hq
+  namespace: external-dns
+spec:
+  interval: 12h
+  chart:
+    spec:
+      chart: external-dns
+      version: "1.22.0"
+      sourceRef:
+        kind: HelmRepository
+        name: external-dns
+        namespace: flux-system
+      interval: 12h
+  values:
+    provider:
+      name: cloudflare
+    env:
+    - name: CF_API_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: cloudflare-api-token
+          key: api-token
+          optional: false
+    serviceAccount:
+      create: false
+      name: external-dns
+    rbac:
+      create: false
+    sources:
+    - service
+    extraArgs:
+    - --cloudflare-proxied
+    domainFilters:
+    - ${PUBLIC_HQ_DOMAIN}
+    registry: txt
+    txtOwnerId: home-lab-hq
+    txtPrefix: externaldns-
+    policy: sync
+    logLevel: info

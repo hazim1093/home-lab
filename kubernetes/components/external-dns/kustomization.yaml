@@ -5,3 +5,4 @@ resources:
 - cloudflare-secret.yaml
 - rbac.yaml
 - helmrelease.yaml
+- helmrelease-hq.yaml
