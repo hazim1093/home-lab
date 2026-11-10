@@ -21,7 +21,9 @@ spec:
       secretName: cloudflared-credentials
       enableWarp: false
       ingress:
-      - service: https://traefik.traefik.svc.cluster.local:443
+      # cloudflared rejects a first rule without a hostname (the chart appends the 404 rule).
+      - hostname: "*.${PUBLIC_BASE_DOMAIN}"
+        service: https://traefik.traefik.svc.cluster.local:443
         originRequest:
           # Edge TLS is Cloudflare's. This hop presents Traefik's default
           # certificate, which is not issued for the public hostname.
