@@ -20,9 +20,9 @@ Use `secretName`, never `values.cloudflare.secret` — the latter renders creden
 
 ## Expose a service
 
-Ingress is a catch-all to Traefik, so this component doesn't change per service — give the app a public hostname instead:
+Ingress is a catch-all to Traefik, so this component doesn't change per service — give the app a public hostname instead. Public names are flat, `<app>-hq.${PUBLIC_BASE_DOMAIN}`: the zone's free Universal SSL certificate covers only one subdomain level.
 
-1. `hostnames: ["app.${PUBLIC_HQ_DOMAIN}"]` on its `HTTPRoute`; Traefik matches `Host`.
-2. `external-dns.alpha.kubernetes.io/hostname: "app.${PUBLIC_HQ_DOMAIN}"` and `external-dns.alpha.kubernetes.io/target: "${CF_TUNNEL_TARGET}"` on its `Service`; `external-dns-hq` creates the proxied CNAME to the tunnel.
+1. `hostnames: ["app-hq.${PUBLIC_BASE_DOMAIN}"]` on its `HTTPRoute`; Traefik matches `Host`.
+2. `external-dns.alpha.kubernetes.io/hostname: "app-hq.${PUBLIC_BASE_DOMAIN}"` and `external-dns.alpha.kubernetes.io/target: "${CF_TUNNEL_TARGET}"` on its `Service`; `external-dns-hq` creates the proxied CNAME to the tunnel.
 
 Interactive apps still want Cloudflare Access — the tunnel is a conduit, not auth.

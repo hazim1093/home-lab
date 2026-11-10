@@ -36,7 +36,7 @@ spec:
     extraArgs:
     - --cloudflare-proxied
     domainFilters:
-    - ${PUBLIC_HQ_DOMAIN}
+    - ${PUBLIC_BASE_DOMAIN}
     registry: txt
     txtOwnerId: home-lab-hq
     txtPrefix: externaldns-
