@@ -20,9 +20,19 @@ Use `secretName`, never `values.cloudflare.secret` — the latter renders creden
 
 ## Expose a service
 
-Ingress is one wildcard rule (`*.${PUBLIC_BASE_DOMAIN}`) to Traefik, so this component doesn't change per service — give the app a public hostname instead. Public names are flat, `<app>-hq.${PUBLIC_BASE_DOMAIN}`: the zone's free Universal SSL certificate covers only one subdomain level.
+Only hostnames listed in the `cloudflared-ingress` Secret reach Traefik; the base domain also serves other things outside this cluster, so there is no wildcard. The list is a SOPS secret (`ingress-secret.yaml`) so this public repo names no hosts. Public names are flat, `<app>-hq.${PUBLIC_BASE_DOMAIN}`: the zone's free Universal SSL certificate covers only one subdomain level.
 
-1. `hostnames: ["app-hq.${PUBLIC_BASE_DOMAIN}"]` on its `HTTPRoute`; Traefik matches `Host`.
-2. `external-dns.alpha.kubernetes.io/hostname: "app-hq.${PUBLIC_BASE_DOMAIN}"` and `external-dns.alpha.kubernetes.io/target: "${CF_TUNNEL_TARGET}"` on its `Service`; `external-dns-hq` creates the proxied CNAME to the tunnel.
+1. Add a rule to `stringData."values.yaml"` in `ingress-secret.yaml` (`sops ingress-secret.yaml`), keeping the whole list:
+   ```yaml
+   cloudflare:
+     ingress:
+     - hostname: app-hq.<base domain>
+       service: https://traefik.traefik.svc.cluster.local:443
+       originRequest:
+         noTLSVerify: true # Traefik's default certificate is not issued for the public hostname
+   ```
+   cloudflared rejects a hostname-less first rule and only honours a `*.` wildcard prefix. The chart appends the final 404 rule itself.
+2. `hostnames: ["app-hq.${PUBLIC_BASE_DOMAIN}"]` on its `HTTPRoute`; Traefik matches `Host`.
+3. `external-dns.alpha.kubernetes.io/hostname: "app-hq.${PUBLIC_BASE_DOMAIN}"` and `external-dns.alpha.kubernetes.io/target: "${CF_TUNNEL_TARGET}"` on its `Service`; `external-dns-hq` creates the proxied CNAME to the tunnel.
 
 Interactive apps still want Cloudflare Access — the tunnel is a conduit, not auth.
