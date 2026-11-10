@@ -33,6 +33,6 @@ Only hostnames listed in the `cloudflared-ingress` Secret reach Traefik; the bas
    ```
    cloudflared rejects a hostname-less first rule and only honours a `*.` wildcard prefix. The chart appends the final 404 rule itself.
 2. `hostnames: ["app-dev.${PUBLIC_BASE_DOMAIN}"]` on its `HTTPRoute`; Traefik matches `Host`.
-3. `external-dns.alpha.kubernetes.io/hostname: "app-dev.${PUBLIC_BASE_DOMAIN}"` and `external-dns.alpha.kubernetes.io/target: "${CF_TUNNEL_TARGET}"` on its `Service`; `external-dns-dev` creates the proxied CNAME to the tunnel.
+3. `external-dns.kubernetes.io/hostname: "app-dev.${PUBLIC_BASE_DOMAIN}"` and `external-dns.kubernetes.io/target: "${CF_TUNNEL_TARGET}"` on its `Service`; `external-dns-dev` creates the proxied CNAME to the tunnel.
 
 Interactive apps still want Cloudflare Access — the tunnel is a conduit, not auth.
