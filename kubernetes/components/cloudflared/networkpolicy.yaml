@@ -24,6 +24,9 @@ spec:
     ports:
     - protocol: TCP
       port: 443
+    # Service port 443 maps to Traefik's websecure container port; policy sees the backend port.
+    - protocol: TCP
+      port: 8443
   - to:
     - ipBlock:
         cidr: 0.0.0.0/0
