@@ -12,3 +12,5 @@ resources:
   - grafana-folder-alerts.yaml
   - grafana-alert-hermes-openrouter-limit.yaml
   - grafana-alert-paperless-backup.yaml
+  - grafana-alert-cronjob-failures.yaml
+  - grafana-alert-container-restarts.yaml

@@ -1,0 +1,104 @@
+# Alerts on CronJobs that keep failing, without paging on a single flake.
+# The period is derived per job from next_schedule - last_schedule, so an hourly
+# job alerts after two hours and a weekly one after two weeks, with no per-job
+# thresholds. Suspended jobs are exempt, and a job that never succeeded at all
+# shows up in the second rule because it has no last_successful_time series.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaAlertRuleGroup
+metadata:
+  name: cronjob-failures
+  namespace: grafana-operator
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana-cloud
+  folderRef: alerts
+  interval: 10m
+  name: cronjobs
+  rules:
+  - uid: cronjob-stale
+    title: CronJob hasn't succeeded for two schedule periods
+    condition: C
+    for: 10m
+    noDataState: OK
+    execErrState: Error
+    notificationSettings:
+      receiver: slack
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.namespace }}/{{ $labels.cronjob }} has not succeeded in over two schedule periods"
+      description: "Runs keep failing or never finish. Check: kubectl -n {{ $labels.namespace }} get jobs,pods"
+    data:
+    - refId: A
+      datasourceUid: grafanacloud-prom
+      relativeTimeRange:
+        from: 600
+        to: 0
+      model:
+        editorMode: code
+        expr: ((time() - kube_cronjob_status_last_successful_time) > bool 2 * (kube_cronjob_next_schedule_time - kube_cronjob_status_last_schedule_time)) and on(namespace, cronjob) (kube_cronjob_spec_suspend == 0)
+        instant: true
+        queryType: instant
+        refId: A
+    - refId: B
+      datasourceUid: __expr__
+      model:
+        type: reduce
+        expression: A
+        reducer: last
+        refId: B
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        type: threshold
+        expression: B
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+        refId: C
+  - uid: cronjob-never-succeeded
+    title: CronJob has never succeeded
+    condition: C
+    for: 1h
+    noDataState: OK
+    execErrState: Error
+    notificationSettings:
+      receiver: slack
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.namespace }}/{{ $labels.cronjob }} has been scheduled but never succeeded"
+      description: "The first scheduled run failed and no run since has worked. Check: kubectl -n {{ $labels.namespace }} get jobs,pods"
+    data:
+    - refId: A
+      datasourceUid: grafanacloud-prom
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      model:
+        editorMode: code
+        expr: (kube_cronjob_status_last_schedule_time unless on(namespace, cronjob) kube_cronjob_status_last_successful_time) and on(namespace, cronjob) (kube_cronjob_spec_suspend == 0)
+        instant: true
+        queryType: instant
+        refId: A
+    - refId: B
+      datasourceUid: __expr__
+      model:
+        type: reduce
+        expression: A
+        reducer: last
+        refId: B
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        type: threshold
+        expression: B
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+        refId: C

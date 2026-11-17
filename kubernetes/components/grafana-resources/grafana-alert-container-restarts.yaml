@@ -1,0 +1,59 @@
+# A restart or two is normal (rollout, one probe hiccup); a loop is not. Three
+# restarts inside an hour is where it is worth a look - obsidian-mcp crashlooped
+# 446 times over two days with nothing alerting.
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaAlertRuleGroup
+metadata:
+  name: container-restarts
+  namespace: grafana-operator
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana-cloud
+  folderRef: alerts
+  interval: 5m
+  name: workloads
+  rules:
+  - uid: container-restart-loop
+    title: Container restarting repeatedly
+    condition: C
+    for: 5m
+    noDataState: OK
+    execErrState: Error
+    notificationSettings:
+      receiver: slack
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) restarted more than 3 times in an hour"
+      description: "Looks like a crash loop rather than a rollout. Check: kubectl -n {{ $labels.namespace }} logs {{ $labels.pod }} --previous"
+    data:
+    - refId: A
+      datasourceUid: grafanacloud-prom
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      model:
+        editorMode: code
+        expr: sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total[1h])) > bool 3
+        instant: true
+        queryType: instant
+        refId: A
+    - refId: B
+      datasourceUid: __expr__
+      model:
+        type: reduce
+        expression: A
+        reducer: last
+        refId: B
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        type: threshold
+        expression: B
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+        refId: C
