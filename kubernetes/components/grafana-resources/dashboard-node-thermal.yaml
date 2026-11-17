@@ -27,7 +27,7 @@ spec:
           "id": 1,
           "type": "timeseries",
           "title": "Temperatures",
-          "description": "node_hwmon_temp_celsius joined with node_hwmon_chip_names (k10temp = CPU die, amdgpu = iGPU, hp = vendor WMI) plus ACPI thermal zones. No CPU-package sensor is exposed on mini-pc-01, so k10temp is the closest proxy.",
+          "description": "node_hwmon_temp_celsius joined with node_hwmon_chip_names (k10temp = CPU package, amdgpu = iGPU, hp = vendor WMI) plus ACPI thermal zones. Fan RPM is absent on purpose: this board exposes no fan channel in hwmon, so there is nothing to chart until hp_wmi_sensors or nct6775 is loaded on the host.",
           "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
           "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
           "targets": [
@@ -72,7 +72,7 @@ spec:
           "id": 2,
           "type": "timeseries",
           "title": "Pressure stall (share of wall time)",
-          "description": "rate(node_pressure_*_seconds_total[5m]) x 100. cpu_waiting is the useful one here: the node runs ~21% busy with no iowait, so any sustained CPU waiting means real contention rather than throughput.",
+          "description": "rate(node_pressure_*_seconds_total[5m]) x 100. cpu_waiting is the useful one here: the node is mostly idle with no iowait, so any sustained CPU waiting means real contention rather than throughput.",
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
           "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
           "targets": [
