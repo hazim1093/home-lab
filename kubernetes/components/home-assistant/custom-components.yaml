@@ -9,7 +9,7 @@ data:
   # Versions are pinned (never "latest") and bumped by Renovate (regex manager
   # in renovate.json); a pod restart applies the new version.
   components.txt: |
-    hacs|https://github.com/hacs/integration/releases/download/2.0.5/hacs.zip
+    # hacs omitted: HA 2026.11 replaces it with the built-in Marketplace
     xiaomi_miot|https://github.com/al-one/hass-xiaomi-miot/releases/download/v1.1.5/xiaomi_miot.zip
     localtuya|https://github.com/xZetsubou/hass-localtuya/archive/refs/tags/2026.7.0.zip
     s3_compatible|https://github.com/PhantomPhoton/S3-Compatible/archive/refs/tags/v2.1.3.zip
