@@ -15,7 +15,6 @@ spec:
         namespace: flux-system
       interval: 12h
   values:
-    # Standalone: one pod, SQLite on a PVC. No Postgres/Redis/workers.
     queueMode:
       enabled: false
     database:
@@ -29,18 +28,16 @@ spec:
       size: 5Gi
       storageClassName: local-path
 
-    # Provides N8N_ENCRYPTION_KEY (see secret.yaml).
     secretRefs:
       existingSecret: n8n-secrets
 
-    # Public URL: sets OAuth redirects and webhook URLs.
     editor:
       url: "https://n8n.${LOCAL_DOMAIN}"
+    webhook:
+      url: "https://n8n.${LOCAL_DOMAIN}"
 
-    # A PDB with one replica would block node drains.
     pdb:
       enabled: false
 
-    # Routing is in httproute.yaml (the 1.x chart has no HTTPRoute support).
     ingress:
       enabled: false
