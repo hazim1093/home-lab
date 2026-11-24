@@ -23,6 +23,13 @@ spec:
     redis:
       enabled: false
 
+    # Node CPU is 95% reserved; chart default 200m request doesn't fit.
+    resources:
+      main:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+
     persistence:
       enabled: true
       size: 5Gi
