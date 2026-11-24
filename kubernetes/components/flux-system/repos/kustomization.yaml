@@ -21,3 +21,4 @@ resources:
 - tailscale.yaml
 - couchdb.yaml
 - cloudflare.yaml
+- n8n.yaml
