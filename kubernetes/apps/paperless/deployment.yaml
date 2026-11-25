@@ -83,6 +83,9 @@ spec:
           httpGet:
             path: /
             port: 8000
+            httpHeaders:
+            - name: Host
+              value: paperless.${LOCAL_DOMAIN}
           initialDelaySeconds: 60
           periodSeconds: 10
           failureThreshold: 6
@@ -90,6 +93,9 @@ spec:
           httpGet:
             path: /
             port: 8000
+            httpHeaders:
+            - name: Host
+              value: paperless.${LOCAL_DOMAIN}
           initialDelaySeconds: 90
           periodSeconds: 30
           failureThreshold: 5
