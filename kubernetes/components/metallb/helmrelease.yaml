@@ -5,6 +5,10 @@ metadata:
   namespace: metallb-system
 spec:
   interval: 12h
+  # A slow rollout should not leave the release Stalled after one attempt.
+  upgrade:
+    remediation:
+      retries: 3
   chart:
     spec:
       chart: metallb
