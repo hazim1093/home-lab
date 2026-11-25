@@ -8,6 +8,35 @@ spec:
   upgrade:
     remediation:
       retries: 5
+  # Chart defaults request 250m per pod: seven pods, 1.75 cores of a 4-core node,
+  # for pods that actually use ~15m. Trimmed so scale-from-zero has headroom.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: keda-add-ons-http-interceptor
+              namespace: keda-http
+            patch: |-
+              - op: add
+                path: /spec/template/spec/containers/0/resources/requests/cpu
+                value: 25m
+          - target:
+              kind: Deployment
+              name: keda-add-ons-http-external-scaler
+              namespace: keda-http
+            patch: |-
+              - op: add
+                path: /spec/template/spec/containers/0/resources/requests/cpu
+                value: 25m
+          - target:
+              kind: Deployment
+              name: keda-add-ons-http-controller-manager
+              namespace: keda-http
+            patch: |-
+              - op: add
+                path: /spec/template/spec/containers/0/resources/requests/cpu
+                value: 25m
   chart:
     spec:
       chart: keda-add-ons-http
