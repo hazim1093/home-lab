@@ -17,6 +17,17 @@ spec:
   values:
     queueMode:
       enabled: false
+
+    # First owner comes from n8n-secrets instead of the UI setup form.
+    # n8n re-applies these on every startup; UI password edits revert on restart.
+    config:
+      extraEnv:
+        - name: N8N_INSTANCE_OWNER_MANAGED_BY_ENV
+          value: "true"
+      extraEnvFrom:
+        - secretRef:
+            name: n8n-secrets
+
     database:
       type: sqlite
       useExternal: false
