@@ -9,6 +9,20 @@ spec:
   upgrade:
     remediation:
       retries: 3
+  # The frr-k8s statuscleaner binds hostPort 19443, so a rolling update can never
+  # place the new pod while the old one holds the port. Recreate frees it first.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: metallb-frr-k8s-statuscleaner
+              namespace: metallb-system
+            patch: |-
+              - op: add
+                path: /spec/strategy
+                value:
+                  type: Recreate
   chart:
     spec:
       chart: metallb
