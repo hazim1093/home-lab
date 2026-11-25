@@ -94,8 +94,10 @@ spec:
           periodSeconds: 30
           failureThreshold: 5
         resources:
+          # 100m could not be scheduled: the node sits at 97% of requests, so a
+          # KEDA cold start stayed Pending. Requests only gate scheduling; no CPU limit.
           requests:
-            cpu: 100m
+            cpu: 25m
             memory: 512Mi
           limits:
             memory: 2Gi
