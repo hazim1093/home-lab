@@ -92,6 +92,9 @@ spec:
       - address=/rustdesk.lab/192.168.0.203
       - address=/mqtt.lab/192.168.0.202
 
+    deploymentAnnotations:
+      configmap.reloader.stakater.com/reload: unbound-config
+
     # unbound
     extraVolumes:
       unbound-config:

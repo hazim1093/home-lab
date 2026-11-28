@@ -47,3 +47,4 @@ data:
 
       # Allow private IPs for trusted domains (applies to all subdomains)
       private-domain: "${BASE_DOMAIN}"
+      private-domain: "${PUBLIC_HQ_DOMAIN}"
