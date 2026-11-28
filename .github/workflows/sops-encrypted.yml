@@ -1,0 +1,14 @@
+name: SOPS Encrypted
+on:
+  pull_request:
+    paths:
+      - 'kubernetes/**/*.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'kubernetes/**/*.yaml'
+permissions:
+  contents: read
+jobs:
+  sops-encrypted:
+    uses: hazim1093/ci/.github/workflows/sops-encrypted.yml@main
